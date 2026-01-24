@@ -320,6 +320,291 @@
 
 
 
+// use actix_web::{web, App, HttpServer, HttpResponse, Result};
+// use actix_cors::Cors;
+// use serde::{Deserialize, Serialize};
+// use chrono::Utc;
+// use tokio::time::{interval, Duration};
+// use rand::Rng;
+// use std::sync::Arc;
+// use tokio::sync::Mutex;
+// use std::collections::VecDeque;
+
+// use mysql_async::{Pool, prelude::*};
+// use redis::AsyncCommands;
+
+// // ---------------------- Data structures ----------------------
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// struct SensorData {
+//     temperature: f64,
+//     humidity: f64,
+//     noise: f64,
+//     heart_rate: f64,
+//     motion: bool,
+//     timestamp: String,
+// }
+
+// #[derive(Debug, Clone, Serialize)]
+// struct EnhancedSensorData {
+//     #[serde(flatten)]
+//     data: SensorData,
+//     stress_index: f64,
+//     stress_level: String,
+// }
+
+// // FHIR-compatible Observation
+// #[derive(Debug, Serialize)]
+// struct Observation {
+//     resourceType: String,
+//     id: String,
+//     status: String,
+//     category: Vec<Category>,
+//     code: Code,
+//     effectiveDateTime: String,
+//     valueQuantity: ValueQuantity,
+//     component: Vec<Component>,
+// }
+
+// #[derive(Debug, Serialize)]
+// struct Category { coding: Vec<Coding> }
+// #[derive(Debug, Serialize)]
+// struct Coding { system: String, code: String, display: String }
+// #[derive(Debug, Serialize)]
+// struct Code { coding: Vec<Coding>, text: String }
+// #[derive(Debug, Serialize)]
+// struct ValueQuantity { value: f64, unit: String }
+// #[derive(Debug, Serialize)]
+// struct Component { code: Code, valueQuantity: ValueQuantity }
+
+// // ---------------------- App State ----------------------
+// struct AppState {
+//     redis_client: Arc<Mutex<redis::Client>>,
+//     mysql_pool: Pool,
+//     in_memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>, // last 600 entries
+// }
+
+// // ---------------------- Stress calculation ----------------------
+// fn calculate_stress_index(data: &SensorData) -> f64 {
+//     let normalized_hr = (data.heart_rate - 60.0) / 100.0;
+//     let temp_factor = data.temperature / 50.0;
+//     let humidity_factor = data.humidity / 100.0;
+//     let noise_factor = data.noise / 100.0;
+//     (normalized_hr * 0.5) + (temp_factor * 0.2) + (humidity_factor * 0.2) + (noise_factor * 0.1)
+// }
+
+// fn get_stress_level(stress_index: f64) -> String {
+//     if stress_index < 0.3 { "Low".to_string() }
+//     else if stress_index < 0.6 { "Moderate".to_string() }
+//     else { "High".to_string() }
+// }
+
+// // ---------------------- Simulate sensor data ----------------------
+// fn simulate_sensor_data() -> SensorData {
+//     let mut rng = rand::thread_rng();
+//     SensorData {
+//         temperature: rng.gen_range(20.0..35.0),
+//         humidity: rng.gen_range(40.0..80.0),
+//         noise: rng.gen_range(50.0..90.0),
+//         heart_rate: rng.gen_range(60.0..100.0),
+//         motion: rng.gen_bool(0.3),
+//         timestamp: Utc::now().to_rfc3339(),
+//     }
+// }
+
+// // ---------------------- Store in MySQL ----------------------
+// async fn store_in_mysql(pool: &Pool, data: &EnhancedSensorData) {
+//     let mut conn = pool.get_conn().await.unwrap();
+//     let query = r"INSERT INTO sensor_data
+//         (temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp)
+//         VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+//     let _ : () = conn.exec_drop(
+//         query,
+//         (
+//             data.data.temperature,
+//             data.data.humidity,
+//             data.data.noise,
+//             data.data.heart_rate,
+//             data.data.motion,
+//             data.stress_index,
+//             data.stress_level.clone(),
+//             data.data.timestamp.clone(),
+//         )
+//     ).await.unwrap();
+// }
+
+// // ---------------------- Store in Redis ----------------------
+// async fn store_in_redis(client: Arc<Mutex<redis::Client>>, data: &EnhancedSensorData) {
+//     let mut conn = client.lock().await.get_async_connection().await.unwrap();
+//     let key = format!("sensor:{}", data.data.timestamp);
+//     let _: () = conn.set_ex(key, serde_json::to_string(data).unwrap(), 600).await.unwrap();
+// }
+
+// // ---------------------- Convert to FHIR ----------------------
+// fn to_fhir_observation(data: &EnhancedSensorData) -> Observation {
+//     Observation {
+//         resourceType: "Observation".to_string(),
+//         id: format!("stress-{}", data.data.timestamp),
+//         status: "final".to_string(),
+//         category: vec![Category {
+//             coding: vec![Coding {
+//                 system: "http://terminology.hl7.org/CodeSystem/observation-category".to_string(),
+//                 code: "vital-signs".to_string(),
+//                 display: "Vital Signs".to_string(),
+//             }],
+//         }],
+//         code: Code {
+//             coding: vec![Coding {
+//                 system: "http://loinc.org".to_string(),
+//                 code: "85354-9".to_string(),
+//                 display: "Stress Index".to_string(),
+//             }],
+//             text: "Environmental Stress Index".to_string(),
+//         },
+//         effectiveDateTime: data.data.timestamp.clone(),
+//         valueQuantity: ValueQuantity { value: data.stress_index, unit: "index".to_string() },
+//         component: vec![
+//             Component {
+//                 code: Code {
+//                     coding: vec![Coding {
+//                         system: "http://loinc.org".to_string(),
+//                         code: "8310-5".to_string(),
+//                         display: "Body temperature".to_string(),
+//                     }],
+//                     text: "Temperature".to_string(),
+//                 },
+//                 valueQuantity: ValueQuantity { value: data.data.temperature, unit: "Cel".to_string() },
+//             },
+//             Component {
+//                 code: Code {
+//                     coding: vec![Coding {
+//                         system: "http://loinc.org".to_string(),
+//                         code: "8867-4".to_string(),
+//                         display: "Heart rate".to_string(),
+//                     }],
+//                     text: "Heart Rate".to_string(),
+//                 },
+//                 valueQuantity: ValueQuantity { value: data.data.heart_rate, unit: "bpm".to_string() },
+//             },
+//         ],
+//     }
+// }
+
+// // ---------------------- Background ingestion ----------------------
+// async fn sensor_task(state: web::Data<AppState>) {
+//     let mut interval = interval(Duration::from_secs(1));
+
+//     loop {
+//         interval.tick().await;
+
+//         let sensor_data = simulate_sensor_data();
+//         let stress_index = calculate_stress_index(&sensor_data);
+//         let stress_level = get_stress_level(stress_index);
+
+//         let enhanced = EnhancedSensorData {
+//             data: sensor_data,
+//             stress_index,
+//             stress_level,
+//         };
+
+//         // In-memory cache
+//         {
+//             let mut mem = state.in_memory.lock().await;
+//             mem.push_back(enhanced.clone());
+//             if mem.len() > 600 { mem.pop_front(); }
+//         }
+
+//         // MySQL insert
+//         let pool = state.mysql_pool.clone();
+//         let enhanced_clone = enhanced.clone();
+//         tokio::spawn(async move {
+//             store_in_mysql(&pool, &enhanced_clone).await;
+//         });
+
+//         // Redis store
+//         let redis_client = state.redis_client.clone();
+//         let enhanced_clone2 = enhanced.clone();
+//         tokio::spawn(async move {
+//             store_in_redis(redis_client, &enhanced_clone2).await;
+//         });
+//     }
+// }
+
+// // ---------------------- API Endpoints ----------------------
+// async fn get_realtime(state: web::Data<AppState>) -> Result<HttpResponse> {
+//     let mem = state.in_memory.lock().await;
+//     let data: Vec<_> = mem.iter().rev().take(60).cloned().collect();
+//     Ok(HttpResponse::Ok().json(data))
+// }
+
+// async fn get_history(state: web::Data<AppState>) -> Result<HttpResponse> {
+//     let mut conn = state.mysql_pool.get_conn().await.unwrap();
+//     let rows = conn.query_map(
+//         "SELECT temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp FROM sensor_data ORDER BY timestamp DESC LIMIT 1000",
+//         |(temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp)| {
+//             EnhancedSensorData {
+//                 data: SensorData {
+//                     temperature,
+//                     humidity,
+//                     noise,
+//                     heart_rate,
+//                     motion,
+//                     timestamp,
+//                 },
+//                 stress_index,
+//                 stress_level,
+//             }
+//         }
+//     ).await.unwrap();
+//     Ok(HttpResponse::Ok().json(rows))
+// }
+
+// async fn get_fhir(state: web::Data<AppState>) -> Result<HttpResponse> {
+//     let mem = state.in_memory.lock().await;
+//     if let Some(latest) = mem.back() {
+//         Ok(HttpResponse::Ok().json(to_fhir_observation(latest)))
+//     } else {
+//         Ok(HttpResponse::NotFound().json(serde_json::json!({"error": "No data"})))
+//     }
+// }
+
+// async fn health() -> Result<HttpResponse> {
+//     Ok(HttpResponse::Ok().json(serde_json::json!({"status": "healthy"})))
+// }
+
+// // ---------------------- Main ----------------------
+// #[actix_web::main]
+// async fn main() -> std::io::Result<()> {
+//     println!("🚀 Starting ESMS Backend...");
+
+//     let redis_client = redis::Client::open("redis://127.0.0.1:6379").unwrap();
+//     let mysql_pool = Pool::new("mysql://root:password@127.0.0.1:3306/esms_db");
+
+//     let state = web::Data::new(AppState {
+//         redis_client: Arc::new(Mutex::new(redis_client)),
+//         mysql_pool,
+//         in_memory: Arc::new(Mutex::new(VecDeque::new())),
+//     });
+
+//     // Start ingestion task
+//     let state_clone = state.clone();
+//     tokio::spawn(async move { sensor_task(state_clone).await });
+
+//     HttpServer::new(move || {
+//         let cors = Cors::permissive();
+//         App::new()
+//             .wrap(cors)
+//             .app_data(state.clone())
+//             .route("/health", web::get().to(health))
+//             .route("/api/realtime", web::get().to(get_realtime))
+//             .route("/api/history", web::get().to(get_history))
+//             .route("/api/fhir/observation", web::get().to(get_fhir))
+//     })
+//     .bind("0.0.0.0:8080")?
+//     .run()
+//     .await
+// }
+
+
 use actix_web::{web, App, HttpServer, HttpResponse, Result};
 use actix_cors::Cors;
 use serde::{Deserialize, Serialize};
@@ -330,10 +615,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::collections::VecDeque;
 
-// MySQL + Redis
 use mysql_async::{Pool, prelude::*};
 use redis::AsyncCommands;
-use uuid::Uuid;
 
 // ---------------------- Data structures ----------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -356,9 +639,9 @@ struct EnhancedSensorData {
 
 // ---------------------- App State ----------------------
 struct AppState {
-    redis_pool: Arc<Mutex<redis::Client>>,
+    redis_client: Arc<Mutex<redis::Client>>,
     mysql_pool: Pool,
-    in_memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>, // still keep last 600 entries for fast access
+    in_memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>, // last 600 entries
 }
 
 // ---------------------- Stress calculation ----------------------
@@ -367,7 +650,6 @@ fn calculate_stress_index(data: &SensorData) -> f64 {
     let temp_factor = data.temperature / 50.0;
     let humidity_factor = data.humidity / 100.0;
     let noise_factor = data.noise / 100.0;
-
     (normalized_hr * 0.5) + (temp_factor * 0.2) + (humidity_factor * 0.2) + (noise_factor * 0.1)
 }
 
@@ -394,13 +676,20 @@ fn simulate_sensor_data() -> SensorData {
     }
 }
 
-// ---------------------- Store data ----------------------
-async fn store_in_redis(client: Arc<Mutex<redis::Client>>, data: &EnhancedSensorData) {
-    let mut conn = client.lock().await.get_async_connection().await.unwrap();
+// ---------------------- Store in Redis ----------------------
+async fn store_in_redis(
+    client: Arc<Mutex<redis::Client>>,
+    data: &EnhancedSensorData,
+) -> redis::RedisResult<()> {
+    // Use multiplexed async connection
+    let mut conn = client.lock().await.get_multiplexed_async_connection().await?;
     let key = format!("sensor:{}", data.data.timestamp);
-    let _ : () = conn.set_ex(key, serde_json::to_string(data).unwrap(), 600).await.unwrap();
+    conn.set_ex::<_, _, ()>(key, serde_json::to_string(data).unwrap(), 600)
+        .await?;
+    Ok(())
 }
 
+// ---------------------- Store in MySQL ----------------------
 async fn store_in_mysql(pool: &Pool, data: &EnhancedSensorData) {
     let mut conn = pool.get_conn().await.unwrap();
     let query = r"INSERT INTO sensor_data
@@ -438,18 +727,30 @@ async fn sensor_task(state: web::Data<AppState>) {
             stress_level,
         };
 
-        // In-memory
+        // In-memory cache
         {
             let mut mem = state.in_memory.lock().await;
             mem.push_back(enhanced.clone());
-            if mem.len() > 600 { mem.pop_front(); }
+            if mem.len() > 600 {
+                mem.pop_front();
+            }
         }
 
         // Redis
-        store_in_redis(state.redis_pool.clone(), &enhanced).await;
+        let redis_client = state.redis_client.clone();
+        let enhanced_clone = enhanced.clone();
+        tokio::spawn(async move {
+            if let Err(e) = store_in_redis(redis_client, &enhanced_clone).await {
+                eprintln!("Redis error: {:?}", e);
+            }
+        });
 
         // MySQL
-        store_in_mysql(&state.mysql_pool, &enhanced).await;
+        let mysql_pool = state.mysql_pool.clone();
+        let enhanced_clone2 = enhanced.clone();
+        tokio::spawn(async move {
+            store_in_mysql(&mysql_pool, &enhanced_clone2).await;
+        });
     }
 }
 
@@ -469,19 +770,19 @@ async fn health() -> Result<HttpResponse> {
 async fn main() -> std::io::Result<()> {
     println!("🚀 Starting ESMS Backend...");
 
-    // Redis client
+    // Redis client (Docker service name: redis)
     let redis_client = redis::Client::open("redis://redis:6379").unwrap();
 
-    // MySQL pool
-    let mysql_pool = mysql_async::Pool::new("mysql://esms_user:esms_pass@mysql:3306/esms_db");
+    // MySQL pool (Docker service name: mysql)
+    let mysql_pool = Pool::new("mysql://esms_user:esms_pass@mysql:3306/esms_db");
 
     let state = web::Data::new(AppState {
-        redis_pool: Arc::new(Mutex::new(redis_client)),
+        redis_client: Arc::new(Mutex::new(redis_client)),
         mysql_pool,
         in_memory: Arc::new(Mutex::new(VecDeque::new())),
     });
 
-    // Start ingestion task
+    // Start sensor ingestion task
     let state_clone = state.clone();
     tokio::spawn(async move {
         sensor_task(state_clone).await;
@@ -499,3 +800,4 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
+
