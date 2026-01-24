@@ -485,11 +485,10 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      # MySQL service for integration tests
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_DATABASE: esms_db
         ports:
           - 3306:3306
@@ -499,7 +498,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      # Redis service for real-time data
       redis:
         image: redis:7-alpine
         ports:
@@ -519,6 +517,7 @@ jobs:
         with:
           toolchain: nightly
           override: true
+          components: rustfmt, clippy
 
       - name: Cache cargo dependencies
         uses: actions/cache@v4
@@ -540,7 +539,9 @@ jobs:
           sqlx database create
           sqlx migrate run
         env:
-          DATABASE_URL: mysql://root:password@127.0.0.1:3306/esms_db
+          DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
+          # Example secret value:
+          # mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1:3306/esms_db
 
       - name: Check backend formatting
         working-directory: ./backend
@@ -554,14 +555,14 @@ jobs:
         working-directory: ./backend
         run: cargo test --verbose
         env:
-          DATABASE_URL: mysql://root:password@127.0.0.1:3306/esms_db
+          DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
           REDIS_URL: redis://127.0.0.1:6379
 
       - name: Run integration tests
         working-directory: ./backend
         run: cargo test --test api_integration_tests --verbose
         env:
-          DATABASE_URL: mysql://root:password@127.0.0.1:3306/esms_db
+          DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
           REDIS_URL: redis://127.0.0.1:6379
 
   build-and-test:
