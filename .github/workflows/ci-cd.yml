@@ -467,6 +467,7 @@
 #         echo "✅ Docker Compose configuration valid"
 #         echo "✅ Ready for GitHub Codespaces deployment"
 
+
 name: ESMS CI/CD Pipeline
 
 on:
@@ -477,10 +478,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
-  REDIS_URL: ${{ secrets.REDIS_URL }}
-  RUST_LOG: ${{ secrets.RUST_LOG }}
-  SERIAL_PORT: ${{ secrets.SERIAL_PORT }}
 
 jobs:
   test-backend:
@@ -488,6 +485,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      # MySQL service for integration tests
       mysql:
         image: mysql:8.0
         env:
@@ -501,6 +499,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      # Redis service for real-time data
       redis:
         image: redis:7-alpine
         ports:
@@ -536,12 +535,12 @@ jobs:
         run: cargo install sqlx-cli --no-default-features --features mysql
 
       - name: Setup database & run migrations
-        working-directory: ./backend
         run: |
+          cd backend
           sqlx database create
           sqlx migrate run
         env:
-          DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/esms_db
 
       - name: Check backend formatting
         working-directory: ./backend
@@ -555,19 +554,15 @@ jobs:
         working-directory: ./backend
         run: cargo test --verbose
         env:
-          DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          RUST_LOG: ${{ secrets.RUST_LOG }}
-          SERIAL_PORT: ${{ secrets.SERIAL_PORT }}
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/esms_db
+          REDIS_URL: redis://127.0.0.1:6379
 
       - name: Run integration tests
         working-directory: ./backend
         run: cargo test --test api_integration_tests --verbose
         env:
-          DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          RUST_LOG: ${{ secrets.RUST_LOG }}
-          SERIAL_PORT: ${{ secrets.SERIAL_PORT }}
+          DATABASE_URL: mysql://root:password@127.0.0.1:3306/esms_db
+          REDIS_URL: redis://127.0.0.1:6379
 
   build-and-test:
     name: Build and Test Full Stack
@@ -599,7 +594,7 @@ jobs:
           push: false
           tags: esms-frontend:test
 
-      - name: Start services with Docker Compose
+      - name: Start full system with Docker Compose
         run: |
           docker compose -f docker-compose.yml up -d
           sleep 15
@@ -618,6 +613,12 @@ jobs:
           sleep 5
           response=$(curl -s http://localhost:8080/api/realtime || echo '[]')
           echo "Realtime API response (first 500 chars): ${response:0:500}"
+
+      - name: Test FHIR observation endpoint
+        run: |
+          sleep 5
+          response=$(curl -s http://localhost:8080/api/fhir/observation || echo '{}')
+          echo "FHIR API response: $response"
 
       - name: Display container logs on failure
         if: failure()
@@ -644,7 +645,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify devcontainer configuration
+      - name: Validate devcontainer configuration
         run: |
           if [ -f .devcontainer/devcontainer.json ]; then
             echo "✅ devcontainer.json found"
@@ -657,6 +658,10 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config > /dev/null
           echo "✅ docker-compose.yml is valid"
+
+      - name: Check simulation mode present
+        run: |
+          grep -q "simulate_sensor_data" backend/src/main.rs && echo "✅ Simulation code present"
 
       - name: Summary
         run: |
