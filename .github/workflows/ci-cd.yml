@@ -741,12 +741,10 @@ jobs:
         run: cargo install sqlx-cli --no-default-features --features mysql
 
       - name: Setup database & run migrations
+        working-directory: ./backend
         run: |
-          cd backend
           sqlx database create
           sqlx migrate run
-        env:
-          DATABASE_URL: ${{ secrets.MYSQL_DATABASE_URL }}
 
       - name: Check backend formatting
         working-directory: ./backend
