@@ -8,9 +8,11 @@ services:
     container_name: esms-backend
     ports:
       - "8080:8080"
-    environment:
-      - RUST_LOG=info
-      - SERIAL_PORT=/dev/cu.usbmodem113401
+    env_file:
+      - .env       
+    # environment:
+    #   - RUST_LOG=info
+    #   - SERIAL_PORT=/dev/cu.usbmodem113401
     volumes:
       - /dev:/dev
     devices:

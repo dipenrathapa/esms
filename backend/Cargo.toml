@@ -16,5 +16,5 @@ rand = "0.8"
 # New dependencies for databases
 mysql_async = "0.30"               # MySQL async driver
 redis = { version = "0.26", features = ["tokio-comp"] }   # Redis async
-uuid = { version = "1.3", features = ["v4"] }    
-        # For unique IDs in FHIR observations
+uuid = { version = "1.3", features = ["v4"] } 
+dotenv = "0.15"
