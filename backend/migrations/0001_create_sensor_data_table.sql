@@ -1,7 +1,4 @@
 -- @up
-CREATE DATABASE IF NOT EXISTS esms_db;
-USE esms_db;
-
 CREATE TABLE IF NOT EXISTS sensor_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     temperature DECIMAL(5,2),
@@ -19,4 +16,4 @@ CREATE TABLE IF NOT EXISTS sensor_data (
 
 -- @down
 DROP TABLE IF EXISTS sensor_data;
-DROP DATABASE IF EXISTS esms_db;
+
