@@ -22,10 +22,10 @@ async fn stress_index_low() {
 #[tokio::test]
 async fn stress_index_high() {
     let data = SensorData {
-        temperature: 35.0,
-        humidity: 80.0,
+        temperature: 45.0,
+        humidity: 90.0,
         noise: 90.0,
-        heart_rate: 100.0,
+        heart_rate: 120.0,
         motion: true,
         timestamp: "2026-01-25T00:00:00Z".into(),
     };
