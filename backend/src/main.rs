@@ -82,7 +82,7 @@
 //     let temp_factor = data.temperature / 50.0;
 //     let humidity_factor = data.humidity / 100.0;
 //     let noise_factor = data.noise / 100.0;
-    
+
 //     (normalized_hr * 0.5) + (temp_factor * 0.2) + (humidity_factor * 0.2) + (noise_factor * 0.1)
 // }
 
@@ -160,7 +160,7 @@
 // fn simulate_sensor_data() -> SensorData {
 //     use rand::Rng;
 //     let mut rng = rand::thread_rng();
-    
+
 //     SensorData {
 //         temperature: rng.gen_range(20.0..35.0),
 //         humidity: rng.gen_range(40.0..80.0),
@@ -174,12 +174,12 @@
 // // Read from Arduino serial port
 // async fn read_serial_data(port_name: &str) -> Option<SensorData> {
 //     use tokio_serial::SerialPortBuilderExt;
-    
+
 //     match tokio_serial::new(port_name, 9600).open_native_async() {
 //         Ok(mut port) => {
 //             use tokio::io::AsyncReadExt;
 //             let mut buf = vec![0u8; 1024];
-            
+
 //             match port.read(&mut buf).await {
 //                 Ok(n) if n > 0 => {
 //                     let data_str = String::from_utf8_lossy(&buf[..n]);
@@ -199,25 +199,25 @@
 // async fn sensor_ingestion_task(state: web::Data<AppState>) {
 //     let mut interval = interval(Duration::from_secs(1));
 //     let serial_port = std::env::var("SERIAL_PORT").unwrap_or_else(|_| "/dev/cu.usbmodem113401".to_string());
-    
+
 //     loop {
 //         interval.tick().await;
-        
+
 //         // Try to read from serial, fallback to simulation
 //         let sensor_data = match read_serial_data(&serial_port).await {
 //             Some(data) => data,
 //             None => simulate_sensor_data(),
 //         };
-        
+
 //         let stress_index = calculate_stress_index(&sensor_data);
 //         let stress_level = get_stress_level(stress_index);
-        
+
 //         let enhanced_data = EnhancedSensorData {
 //             data: sensor_data,
 //             stress_index,
 //             stress_level,
 //         };
-        
+
 //         // Store in Redis (last 10 minutes = 600 entries)
 //         {
 //             let mut redis = state.redis_data.lock().await;
@@ -226,7 +226,7 @@
 //                 redis.pop_front();
 //             }
 //         }
-        
+
 //         // Store in MySQL (historical)
 //         {
 //             let mut mysql = state.mysql_data.lock().await;
@@ -239,7 +239,7 @@
 // async fn get_realtime(state: web::Data<AppState>) -> Result<HttpResponse> {
 //     let redis = state.redis_data.lock().await;
 //     let recent_data: Vec<EnhancedSensorData> = redis.iter().rev().take(60).cloned().collect();
-    
+
 //     Ok(HttpResponse::Ok().json(recent_data))
 // }
 
@@ -249,7 +249,7 @@
 //     query: web::Query<std::collections::HashMap<String, String>>,
 // ) -> Result<HttpResponse> {
 //     let mysql = state.mysql_data.lock().await;
-    
+
 //     // Simple time filtering (can be enhanced)
 //     let filtered_data: Vec<EnhancedSensorData> = if let (Some(start), Some(end)) = (query.get("start"), query.get("end")) {
 //         mysql.iter()
@@ -259,14 +259,14 @@
 //     } else {
 //         mysql.clone()
 //     };
-    
+
 //     Ok(HttpResponse::Ok().json(filtered_data))
 // }
 
 // // API endpoint: FHIR observation
 // async fn get_fhir_observation(state: web::Data<AppState>) -> Result<HttpResponse> {
 //     let redis = state.redis_data.lock().await;
-    
+
 //     if let Some(latest) = redis.back() {
 //         let observation = to_fhir_observation(latest);
 //         Ok(HttpResponse::Ok().json(observation))
@@ -288,23 +288,23 @@
 // #[actix_web::main]
 // async fn main() -> std::io::Result<()> {
 //     println!("🚀 Starting ESMS Backend Server...");
-    
+
 //     let state = web::Data::new(AppState {
 //         redis_data: Arc::new(Mutex::new(VecDeque::new())),
 //         mysql_data: Arc::new(Mutex::new(Vec::new())),
 //     });
-    
+
 //     // Start background sensor ingestion
 //     let state_clone = state.clone();
 //     tokio::spawn(async move {
 //         sensor_ingestion_task(state_clone).await;
 //     });
-    
+
 //     println!("✅ Backend listening on http://0.0.0.0:8080");
-    
+
 //     HttpServer::new(move || {
 //         let cors = Cors::permissive();
-        
+
 //         App::new()
 //             .wrap(cors)
 //             .app_data(state.clone())
@@ -317,8 +317,6 @@
 //     .run()
 //     .await
 // }
-
-
 
 // use actix_web::{web, App, HttpServer, HttpResponse, Result};
 // use actix_cors::Cors;
@@ -604,7 +602,6 @@
 //     .await
 // }
 
-
 // use actix_web::{web, App, HttpServer, HttpResponse, Result};
 // use actix_cors::Cors;
 // use serde::{Deserialize, Serialize};
@@ -801,22 +798,20 @@
 //     .await
 // }
 
-
-use dotenv::dotenv; // ✅ load .env
-use actix_web::{web, App, HttpServer, HttpResponse, Result};
 use actix_cors::Cors;
-use serde::{Deserialize, Serialize};
+use actix_web::{web, App, HttpResponse, HttpServer, Result};
 use chrono::Utc;
-use tokio::time::{interval, Duration};
+use dotenv::dotenv; // ✅ load .env
+use mysql_async::Opts;
 use rand::Rng;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::env;
-use mysql_async::Opts;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::time::{interval, Duration};
 
-
-use mysql_async::{Pool, prelude::*};
+use mysql_async::{prelude::*, Pool};
 use redis::AsyncCommands;
 
 // ---------------------- Data structures ----------------------
@@ -882,7 +877,11 @@ async fn store_in_redis(
     client: Arc<Mutex<redis::Client>>,
     data: &EnhancedSensorData,
 ) -> redis::RedisResult<()> {
-    let mut conn = client.lock().await.get_multiplexed_async_connection().await?;
+    let mut conn = client
+        .lock()
+        .await
+        .get_multiplexed_async_connection()
+        .await?;
     let key = format!("sensor:{}", data.data.timestamp);
     conn.set_ex::<_, _, ()>(key, serde_json::to_string(data).unwrap(), 600)
         .await?;
@@ -895,19 +894,22 @@ async fn store_in_mysql(pool: &Pool, data: &EnhancedSensorData) {
     let query = r"INSERT INTO sensor_data
         (temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    let _ : () = conn.exec_drop(
-        query,
-        (
-            data.data.temperature,
-            data.data.humidity,
-            data.data.noise,
-            data.data.heart_rate,
-            data.data.motion,
-            data.stress_index,
-            data.stress_level.clone(),
-            data.data.timestamp.clone(),
+    let _: () = conn
+        .exec_drop(
+            query,
+            (
+                data.data.temperature,
+                data.data.humidity,
+                data.data.noise,
+                data.data.heart_rate,
+                data.data.motion,
+                data.stress_index,
+                data.stress_level.clone(),
+                data.data.timestamp.clone(),
+            ),
         )
-    ).await.unwrap();
+        .await
+        .unwrap();
 }
 
 // ---------------------- Background ingestion ----------------------
