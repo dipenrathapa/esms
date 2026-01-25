@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use crate as esms_backend_main; 
 
 // Bring in everything from main.rs
 use esms_backend_main::{
