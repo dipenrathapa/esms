@@ -1,9 +1,9 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use validator::Validate;
 
 // ============================
 // Models
