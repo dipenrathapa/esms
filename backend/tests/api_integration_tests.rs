@@ -1,14 +1,14 @@
+use crate as esms_backend_main;
 use actix_web::{test, web, App};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use crate as esms_backend_main; 
 
 // Bring in everything from main.rs
 use esms_backend_main::{
-    calculate_stress_index, get_realtime, health, SensorData, EnhancedSensorData,
-    AppState, AppConfig, stress_level,
+    calculate_stress_index, get_realtime, health, stress_level, AppConfig, AppState,
+    EnhancedSensorData, SensorData,
 };
 
 // ---------------------- Unit tests ----------------------
