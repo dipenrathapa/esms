@@ -759,7 +759,6 @@ jobs:
           fi
 
 
-
       - name: Setup database & run migrations
         run: |
           cd backend
@@ -899,3 +898,7 @@ jobs:
           echo "✅ Frontend builds successfully"
           echo "✅ Docker Compose configuration valid"
           echo "✅ Ready for GitHub Codespaces deployment"
+
+
+
+# c
