@@ -746,8 +746,19 @@ jobs:
             backend/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.toml') }}
 
-      - name: Install sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features mysql
+      # - name: Install sqlx-cli
+      #   run: cargo install sqlx-cli --no-default-features --features mysql
+      
+
+      - name: Install sqlx-cli if missing
+        run: |
+          if ! command -v sqlx &> /dev/null; then
+            cargo install sqlx-cli --no-default-features --features mysql
+          else
+            echo "sqlx already installed"
+          fi
+
+
 
       - name: Setup database & run migrations
         run: |
