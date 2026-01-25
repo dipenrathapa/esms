@@ -157,20 +157,107 @@
 
 
 
+# services:
+#   mysql:
+#     image: mysql:8.0
+#     restart: always
+#     environment:
+#       MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+#       MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+#       MYSQL_USER: ${{ secrets.MYSQL_USER }}
+#       MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 10
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     container_name: esms-backend
+#     ports:
+#       - "8080:8080"
+#     # env_file:
+#     #   - .env
+#     environment:
+#       # 🔴 FORCE SAFE MODE (toggle for local dev or CI/CD)
+#       USE_SERIAL: "${USE_SERIAL:-true}"
+#       RUST_LOG: "${RUST_LOG:-info}"
+#     depends_on:
+#       redis:
+#         condition: service_healthy
+#       mysql:
+#         condition: service_healthy
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#       dockerfile: Dockerfile
+#     container_name: esms-frontend
+#     ports:
+#       - "3000:80"
+#     extra_hosts:
+#       - "host.docker.internal:host-gateway"
+#     depends_on:
+#       backend:
+#         condition: service_healthy
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+#   redis:
+#     image: redis:7-alpine
+#     container_name: esms-redis
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis-data:/data
+#     command: redis-server --appendonly yes
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+#   mysql:
+#     image: mysql:8.0
+#     container_name: esms-mysql
+#     ports:
+#       - "3306:3306"
+#     environment:
+#       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-esms_password}"
+#       MYSQL_DATABASE: "${MYSQL_DATABASE:-esms_db}"
+#       MYSQL_USER: "${MYSQL_USER:-esms_user}"
+#       MYSQL_PASSWORD: "${MYSQL_PASSWORD:-esms_pass}"
+#     volumes:
+#       - mysql-data:/var/lib/mysql
+#       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+# volumes:
+#   redis-data:
+#   mysql-data:
+
+# networks:
+#   esms-network:
+#     driver: bridge
+
+
 services:
-  mysql:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-      MYSQL_USER: ${{ secrets.MYSQL_USER }}
-      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
   backend:
     build:
       context: ./backend
@@ -178,17 +265,25 @@ services:
     container_name: esms-backend
     ports:
       - "8080:8080"
-    # env_file:
-    #   - .env
+    env_file:
+      - .env
     environment:
-      # 🔴 FORCE SAFE MODE (toggle for local dev or CI/CD)
-      USE_SERIAL: "${USE_SERIAL:-true}"
+      USE_SERIAL: "${USE_SERIAL:-false}"
       RUST_LOG: "${RUST_LOG:-info}"
+      REDIS_URL: "redis://redis:6379"
+      MYSQL_DATABASE_URL: "mysql://esms_user:esms_pass@mysql:3306/esms_db"
+      BIND_ADDR: "0.0.0.0:8080"
     depends_on:
       redis:
         condition: service_healthy
       mysql:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     networks:
       - esms-network
@@ -232,18 +327,18 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-esms_password}"
-      MYSQL_DATABASE: "${MYSQL_DATABASE:-esms_db}"
-      MYSQL_USER: "${MYSQL_USER:-esms_user}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-esms_pass}"
+      MYSQL_ROOT_PASSWORD: "esms_password"
+      MYSQL_DATABASE: "esms_db"
+      MYSQL_USER: "esms_user"
+      MYSQL_PASSWORD: "esms_pass"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pesms_password"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
     networks:
       - esms-network
