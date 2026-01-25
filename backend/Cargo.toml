@@ -18,3 +18,26 @@ mysql_async = "0.30"               # MySQL async driver
 redis = { version = "0.26", features = ["tokio-comp"] }   # Redis async
 uuid = { version = "1.3", features = ["v4"] } 
 dotenv = "0.15"
+
+# logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+
+# validation
+validator = { version = "0.18", features = ["derive"] }
+
+# errors
+thiserror = "1"
+
+# security / middleware
+actix-web-lab = "0.20"
+
+# graceful shutdown
+tokio-util = "0.7"
+
+jsonwebtoken = "8"
+actix-web-httpauth = "0.7"
+
+serialport = "4.8"
+
+

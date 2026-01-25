@@ -12,11 +12,11 @@ services:
       - .env       
     # environment:
     #   - RUST_LOG=info
-    #   - SERIAL_PORT=/dev/cu.usbmodem113401
+    #   - SERIAL_PORT=/dev/cu.usbmodem13401
     volumes:
       - /dev:/dev
     devices:
-      - /dev/cu.usbmodem113401:/dev/cu.usbmodem113401
+      - /dev/cu.usbmodem13401:/dev/cu.usbmodem13401
     privileged: true
     depends_on:
       - redis

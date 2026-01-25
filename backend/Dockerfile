@@ -45,6 +45,12 @@ WORKDIR /app
 # Install nightly toolchain
 RUN rustup toolchain install nightly && rustup default nightly
 
+# ✅ Install system dependencies needed for serialport / libudev
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libudev-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy everything at once (Cargo.toml + src)
 COPY Cargo.toml ./ 
 COPY src ./src
