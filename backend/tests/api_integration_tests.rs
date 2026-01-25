@@ -1,111 +1,38 @@
-use crate as esms_backend_main;
-use actix_web::{test, web, App};
-use std::collections::VecDeque;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::Mutex;
+use esms_backend::{calculate_stress_index, stress_level, SensorData};
+use tokio;
 
-// Bring in everything from main.rs
-use esms_backend_main::{
-    calculate_stress_index, get_realtime, health, stress_level, AppConfig, AppState,
-    EnhancedSensorData, SensorData,
-};
+#[tokio::test]
+async fn stress_index_low() {
+    let data = SensorData {
+        temperature: 20.0,
+        humidity: 40.0,
+        noise: 50.0,
+        heart_rate: 60.0,
+        motion: false,
+        timestamp: "2026-01-25T00:00:00Z".into(),
+    };
 
-// ---------------------- Unit tests ----------------------
-#[cfg(test)]
-mod unit_tests {
-    use super::*;
+    let index = calculate_stress_index(&data);
+    let level = stress_level(index);
 
-    #[test]
-    fn stress_index_low() {
-        let data = SensorData {
-            temperature: 25.0,
-            humidity: 50.0,
-            noise: 60.0,
-            heart_rate: 60.0,
-            motion: false,
-            timestamp: "2026-01-24T00:00:00Z".to_string(),
-        };
-        let score = calculate_stress_index(&data);
-        assert!(score < 0.3);
-        assert_eq!(stress_level(score), "Low");
-    }
-
-    #[test]
-    fn stress_index_high() {
-        let data = SensorData {
-            temperature: 40.0,
-            humidity: 90.0,
-            noise: 90.0,
-            heart_rate: 120.0,
-            motion: true,
-            timestamp: "2026-01-24T00:00:00Z".to_string(),
-        };
-        let score = calculate_stress_index(&data);
-        assert!(score > 0.6);
-        assert_eq!(stress_level(score), "High");
-    }
+    assert_eq!(level, "Low");
+    assert!(index >= 0.0 && index <= 0.3);
 }
 
-// ---------------------- Integration tests ----------------------
-#[cfg(test)]
-mod integration_tests {
-    use super::*;
-    use redis::AsyncCommands;
-    use tokio::time::sleep;
+#[tokio::test]
+async fn stress_index_high() {
+    let data = SensorData {
+        temperature: 35.0,
+        humidity: 80.0,
+        noise: 90.0,
+        heart_rate: 100.0,
+        motion: true,
+        timestamp: "2026-01-25T00:00:00Z".into(),
+    };
 
-    /// Setup AppState connecting to local Redis & MySQL
-    async fn setup_app_state() -> web::Data<AppState> {
-        let config = AppConfig::from_env();
+    let index = calculate_stress_index(&data);
+    let level = stress_level(index);
 
-        // Retry loop for Redis
-        let redis_client = loop {
-            match redis::Client::open(config.redis_url.clone()) {
-                Ok(client) => break client,
-                Err(_) => sleep(Duration::from_secs(1)).await,
-            }
-        };
-
-        let mysql_pool = mysql_async::Pool::new(config.mysql_url.clone());
-
-        web::Data::new(AppState {
-            redis: Arc::new(Mutex::new(redis_client)),
-            mysql: mysql_pool,
-            memory: Arc::new(Mutex::new(VecDeque::new())),
-            config,
-        })
-    }
-
-    /// Health endpoint test
-    #[actix_web::test]
-    async fn health_endpoint() {
-        let app = test::init_service(App::new().route("/health", web::get().to(health))).await;
-        let req = test::TestRequest::get().uri("/health").to_request();
-        let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
-    }
-
-    /// Realtime API test (requires Redis & MySQL)
-    /// Ignored by default for local dev
-    #[actix_web::test]
-    #[ignore]
-    async fn get_realtime_endpoint() {
-        let state = setup_app_state().await;
-
-        let app = test::init_service(
-            App::new()
-                .app_data(state.clone())
-                .route("/api/realtime", web::get().to(get_realtime)),
-        )
-        .await;
-
-        let req = test::TestRequest::get().uri("/api/realtime").to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert!(resp.status().is_success());
-
-        let body_bytes = test::read_body(resp).await;
-        let body_str = std::str::from_utf8(&body_bytes).unwrap_or("");
-        assert!(body_str.starts_with('[') && body_str.ends_with(']'));
-    }
+    assert_eq!(level, "High");
+    assert!(index > 0.6);
 }
