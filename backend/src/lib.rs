@@ -1,4 +1,5 @@
-// use chrono::Utc;
+#[allow(unused_imports)]
+use chrono::Utc; // currently unused, but allowed
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -49,7 +50,7 @@ pub fn stress_level(score: f64) -> String {
 }
 
 // ============================
-// Example AppState for tests
+// AppState
 // ============================
 
 pub struct AppState {
@@ -65,5 +66,12 @@ impl AppState {
         Self {
             memory: Arc::new(Mutex::new(VecDeque::new())),
         }
+    }
+}
+
+// Implement Default to satisfy Clippy/CI
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
     }
 }
