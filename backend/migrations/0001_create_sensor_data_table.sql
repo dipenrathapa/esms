@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS sensor_data (
     INDEX idx_stress_level (stress_level)
 );
 
+
 -- @down
 DROP TABLE IF EXISTS sensor_data;
 
