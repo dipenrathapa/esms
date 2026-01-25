@@ -1250,9 +1250,6 @@
 //     .await
 // }
 
-
-
-
 // use actix_cors::Cors;
 // use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
 // use chrono::Utc;
@@ -1492,7 +1489,6 @@
 //     .run()
 //     .await
 // }
-
 
 // use actix_cors::Cors;
 // use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
@@ -1771,7 +1767,6 @@
 //     .run()
 //     .await
 // }
-
 
 // use actix_cors::Cors;
 // use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
@@ -2093,8 +2088,6 @@
 //     .await
 // }
 
-
-
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
 use chrono::Utc;
@@ -2110,7 +2103,7 @@ use tokio::{
     sync::Mutex,
     time::{interval, Duration},
 };
-use tracing::{warn, info};
+use tracing::{info, warn};
 use tracing_subscriber::{fmt, EnvFilter};
 use validator::Validate;
 
@@ -2145,7 +2138,8 @@ impl AppConfig {
             mysql_url: env::var("MYSQL_DATABASE_URL").expect("MYSQL_DATABASE_URL missing"),
             bind_addr: env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".to_string()),
             use_serial,
-            serial_tcp_host: env::var("SERIAL_TCP_HOST").unwrap_or_else(|_| "host.docker.internal".to_string()),
+            serial_tcp_host: env::var("SERIAL_TCP_HOST")
+                .unwrap_or_else(|_| "host.docker.internal".to_string()),
             serial_tcp_port,
         }
     }
@@ -2423,5 +2417,3 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
-
-
