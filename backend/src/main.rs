@@ -2149,6 +2149,8 @@ impl AppConfig {
 // Error Handling
 // ======================================================
 
+
+#[allow(dead_code)]
 #[derive(thiserror::Error, Debug)]
 enum ApiError {
     #[error("Internal server error")]
