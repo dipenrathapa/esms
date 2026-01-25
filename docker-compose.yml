@@ -1,3 +1,83 @@
+# version: '3.8'
+
+# services:
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile
+#     container_name: esms-backend
+#     ports:
+#       - "8080:8080"
+#     env_file:
+#       - .env       
+#     # environment:
+#     #   - RUST_LOG=info
+#     #   - SERIAL_PORT=/dev/cu.usbmodem13401
+#     volumes:
+#       - /dev:/dev
+#     # devices:
+#     #   - /dev/cu.usbmodem13401:/dev/cu.usbmodem13401
+#     privileged: true
+#     depends_on:
+#       - redis
+#       - mysql
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#       dockerfile: Dockerfile
+#     container_name: esms-frontend
+#     ports:
+#       - "3000:80"
+#     extra_hosts:
+#       - "host.docker.internal:host-gateway" 
+#     depends_on:
+#       - backend
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+#   redis:
+#     image: redis:7-alpine
+#     container_name: esms-redis
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis-data:/data
+#     command: redis-server --appendonly yes
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+#   mysql:
+#     image: mysql:8.0
+#     container_name: esms-mysql
+#     ports:
+#       - "3306:3306"
+#     environment:
+#       - MYSQL_ROOT_PASSWORD=esms_password
+#       - MYSQL_DATABASE=esms_db
+#       - MYSQL_USER=esms_user
+#       - MYSQL_PASSWORD=esms_pass
+#     volumes:
+#       - mysql-data:/var/lib/mysql
+#       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+#     restart: unless-stopped
+#     networks:
+#       - esms-network
+
+# volumes:
+#   redis-data:
+#   mysql-data:
+
+# networks:
+#   esms-network:
+#     driver: bridge
+
+
 version: '3.8'
 
 services:
@@ -9,15 +89,11 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env       
-    # environment:
-    #   - RUST_LOG=info
-    #   - SERIAL_PORT=/dev/cu.usbmodem13401
-    volumes:
-      - /dev:/dev
-    devices:
-      - /dev/cu.usbmodem13401:/dev/cu.usbmodem13401
-    privileged: true
+      - .env
+    environment:
+      # 🔴 FORCE SAFE MODE IN DOCKER
+      - USE_SERIAL=true
+      - RUST_LOG=info
     depends_on:
       - redis
       - mysql
@@ -33,7 +109,7 @@ services:
     ports:
       - "3000:80"
     extra_hosts:
-      - "host.docker.internal:host-gateway" 
+      - "host.docker.internal:host-gateway"
     depends_on:
       - backend
     restart: unless-stopped
@@ -58,10 +134,10 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=esms_password
-      - MYSQL_DATABASE=esms_db
-      - MYSQL_USER=esms_user
-      - MYSQL_PASSWORD=esms_pass
+      MYSQL_ROOT_PASSWORD: esms_password
+      MYSQL_DATABASE: esms_db
+      MYSQL_USER: esms_user
+      MYSQL_PASSWORD: esms_pass
     volumes:
       - mysql-data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
