@@ -1,58 +1,79 @@
 use actix_web::{test, App};
-use esms_backend::{calculate_stress_index, get_stress_level, health, get_realtime, SensorData, EnhancedSensorData};
+use esms_backend::{
+    calculate_stress_index, get_realtime, get_stress_level, health, EnhancedSensorData, SensorData,
+};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 // ---------------------- Unit tests ----------------------
-#[actix_rt::test]
-async fn test_calculate_stress_index_and_level() {
-    let data = SensorData {
-        temperature: 30.0,
-        humidity: 50.0,
-        noise: 70.0,
-        heart_rate: 80.0,
-        motion: true,
-        timestamp: "2026-01-24T00:00:00Z".to_string(),
-    };
-    let index = calculate_stress_index(&data);
-    let level = get_stress_level(index);
+#[cfg(test)]
+mod unit_tests {
+    use super::*;
 
-    // Stress index should be between 0 and 1
-    assert!(index >= 0.0 && index <= 1.0);
+    #[test]
+    fn test_stress_index_low() {
+        let data = SensorData {
+            temperature: 25.0,
+            humidity: 50.0,
+            noise: 60.0,
+            heart_rate: 60.0,
+            motion: false,
+            timestamp: "2026-01-24T00:00:00Z".to_string(),
+        };
+        let stress_index = calculate_stress_index(&data);
+        assert!(stress_index < 0.3);
+        assert_eq!(get_stress_level(stress_index), "Low");
+    }
 
-    // Stress level should be one of the expected strings
-    assert!(level == "Low" || level == "Moderate" || level == "High");
+    #[test]
+    fn test_stress_index_high() {
+        let data = SensorData {
+            temperature: 40.0,
+            humidity: 90.0,
+            noise: 90.0,
+            heart_rate: 120.0,
+            motion: true,
+            timestamp: "2026-01-24T00:00:00Z".to_string(),
+        };
+        let stress_index = calculate_stress_index(&data);
+        assert!(stress_index > 0.6);
+        assert_eq!(get_stress_level(stress_index), "High");
+    }
 }
 
 // ---------------------- Integration test (API) ----------------------
 #[actix_rt::test]
 async fn test_health_endpoint() {
-    let app = test::init_service(App::new().route("/health", actix_web::web::get().to(health))).await;
+    let app = test::init_service(
+        App::new().route("/health", actix_web::web::get().to(health)),
+    )
+    .await;
     let req = test::TestRequest::get().uri("/health").to_request();
     let resp = test::call_service(&app, req).await;
-
     assert!(resp.status().is_success());
 }
 
 #[actix_rt::test]
 async fn test_get_realtime_endpoint() {
-    // Setup dummy AppState
-    use esms_backend::{AppState, redis};
+    use esms_backend::{redis, AppState};
+
     let state = actix_web::web::Data::new(AppState {
-        redis_client: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1:6379").unwrap())),
-        mysql_pool: mysql_async::Pool::new("mysql://root:password@127.0.0.1:3306/esms_db"),
+        redis_client: Arc::new(Mutex::new(
+            redis::Client::open("redis://127.0.0.1:6379").unwrap(),
+        )),
+        mysql_pool: mysql_async::Pool::new("mysql://user:pass@localhost/db"),
         in_memory: Arc::new(Mutex::new(VecDeque::new())),
     });
 
     let app = test::init_service(
         App::new()
             .app_data(state.clone())
-            .route("/api/realtime", actix_web::web::get().to(get_realtime))
-    ).await;
+            .route("/api/realtime", actix_web::web::get().to(get_realtime)),
+    )
+    .await;
 
     let req = test::TestRequest::get().uri("/api/realtime").to_request();
     let resp = test::call_service(&app, req).await;
-
     assert!(resp.status().is_success());
 }
