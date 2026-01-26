@@ -1,13 +1,26 @@
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+use validator::Validate;
+
+/// Sensor data model
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct SensorData {
+    #[validate(range(min = 0.0, max = 60.0))]
     pub temperature: f64,
+
+    #[validate(range(min = 0.0, max = 100.0))]
     pub humidity: f64,
+
+    #[validate(range(min = 0.0, max = 120.0))]
     pub noise: f64,
+
+    #[validate(range(min = 30.0, max = 200.0))]
     pub heart_rate: f64,
+
     pub motion: bool,
     pub timestamp: String,
 }
 
+/// Core business logic
 pub fn calculate_stress_index(data: &SensorData) -> f64 {
     let score = (data.heart_rate - 60.0) / 100.0 * 0.5
         + (data.temperature / 50.0) * 0.2
@@ -17,6 +30,7 @@ pub fn calculate_stress_index(data: &SensorData) -> f64 {
     score.clamp(0.0, 1.0)
 }
 
+/// Stress level categorization
 pub fn stress_level(score: f64) -> String {
     match score {
         x if x < 0.3 => "Low",
@@ -26,43 +40,28 @@ pub fn stress_level(score: f64) -> String {
     .to_string()
 }
 
-// Minimal unit test inside lib.rs
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_basic_math() {
-        assert_eq!(2 + 2, 4);
-    }
-
-    #[test]
-    fn test_stress_index_low() {
+    fn test_calculate_stress_index() {
         let data = SensorData {
-            temperature: 20.0,
-            humidity: 40.0,
-            noise: 50.0,
-            heart_rate: 60.0,
+            temperature: 25.0,
+            humidity: 50.0,
+            noise: 60.0,
+            heart_rate: 80.0,
             motion: false,
             timestamp: "2026-01-26T00:00:00Z".to_string(),
         };
-        let index = calculate_stress_index(&data);
-        assert!(index >= 0.0 && index <= 1.0);
-        assert_eq!(stress_level(index), "Low");
+        let score = calculate_stress_index(&data);
+        assert!(score >= 0.0 && score <= 1.0);
     }
 
     #[test]
-    fn test_stress_index_high() {
-        let data = SensorData {
-            temperature: 35.0,
-            humidity: 80.0,
-            noise: 90.0,
-            heart_rate: 100.0,
-            motion: true,
-            timestamp: "2026-01-26T00:00:00Z".to_string(),
-        };
-        let index = calculate_stress_index(&data);
-        assert!(index >= 0.0 && index <= 1.0);
-        assert_eq!(stress_level(index), "High");
+    fn test_stress_level() {
+        assert_eq!(stress_level(0.2), "Low");
+        assert_eq!(stress_level(0.5), "Moderate");
+        assert_eq!(stress_level(0.8), "High");
     }
 }
