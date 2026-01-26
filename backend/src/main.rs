@@ -2040,29 +2040,6 @@ async fn store_to_redis(
     retry_config: &RetryConfig,
 ) -> Result<(), ApiError> {
     let timestamp = payload.data.timestamp.clone();
-    
-    let mut conn = retry_with_backoff(
-        || async {
-            redis
-                .lock()
-                .await
-                .get_multiplexed_async_connection()
-                .await
-                .map_err(|e| {
-                    error!(
-                        error = %e,
-                        operation = "redis_connection",
-                        timestamp = %timestamp,
-                        "Failed to establish Redis connection"
-                    );
-                    ApiError::Redis(format!("Connection failed: {}", e))
-                })
-        },
-        retry_config,
-        "redis_connection",
-    )
-    .await?;
-
     let key = format!("sensor:{}", timestamp);
     let value = serde_json::to_string(&payload)
         .map_err(|e| {
@@ -2076,21 +2053,44 @@ async fn store_to_redis(
             ApiError::Redis(format!("Serialization failed: {}", e))
         })?;
 
+    // Retry the entire operation (get connection + set)
     retry_with_backoff(
-        || async {
-            conn.set_ex::<_, _, ()>(key.clone(), value.clone(), 600)
-                .await
-                .map_err(|e| {
-                    error!(
-                        error = %e,
-                        operation = "redis_set",
-                        timestamp = %timestamp,
-                        key = %key,
-                        ttl = 600,
-                        "Failed to set value in Redis"
-                    );
-                    ApiError::Redis(format!("SET failed: {}", e))
-                })
+        || {
+            let redis = redis.clone();
+            let key = key.clone();
+            let value = value.clone();
+            let timestamp = timestamp.clone();
+            
+            async move {
+                let mut conn = redis
+                    .lock()
+                    .await
+                    .get_multiplexed_async_connection()
+                    .await
+                    .map_err(|e| {
+                        error!(
+                            error = %e,
+                            operation = "redis_connection",
+                            timestamp = %timestamp,
+                            "Failed to establish Redis connection"
+                        );
+                        ApiError::Redis(format!("Connection failed: {}", e))
+                    })?;
+
+                conn.set_ex::<_, _, ()>(key.clone(), value, 600)
+                    .await
+                    .map_err(|e| {
+                        error!(
+                            error = %e,
+                            operation = "redis_set",
+                            timestamp = %timestamp,
+                            key = %key,
+                            ttl = 600,
+                            "Failed to set value in Redis"
+                        );
+                        ApiError::Redis(format!("SET failed: {}", e))
+                    })
+            }
         },
         retry_config,
         "redis_set",
