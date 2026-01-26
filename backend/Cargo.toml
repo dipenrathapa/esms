@@ -41,3 +41,10 @@ actix-web-httpauth = "0.7"
 serialport = "4.8"
 
 
+[lib]
+name = "esms_backend"
+path = "src/lib.rs"  # Important! This exposes lib.rs as a library for integration tests
+
+[[bin]]
+name = "esms-backend"
+path = "src/main.rs"

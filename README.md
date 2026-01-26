@@ -4,6 +4,7 @@ A cloud-deployable, real-time sensor analytics system demonstrating **Innovation
 
 ---
 
+
 ## 🎯 Project Overview
 
 ESMS is a full-stack IoT application that:
@@ -75,6 +76,8 @@ The frontend **immediately reacts** to stress changes through:
 - Arduino Uno with sensors connected to `/dev/cu.usbmodem113401`
 - Rust 1.75+ (optional, for development)
 
+
+
 #### Arduino Data Format
 Your Arduino must send JSON over serial at 9600 baud:
 ```json
@@ -100,6 +103,8 @@ docker-compose up --build
 # Access the dashboard
 open http://localhost:3000
 ```
+## Configuration
+Copy `.env.example` to `.env` and provide your own credentials for local development.
 
 **Services:**
 - Frontend: `http://localhost:3000`
@@ -150,6 +155,10 @@ Health check endpoint
   "timestamp": "2026-01-24T10:00:00Z"
 }
 ```
+## Local Setup
+1. Copy `.env.example` to `.env`
+2. Add your credentials in `.env`
+3. Run `docker compose up --build`
 
 ### **GET /api/realtime**
 Returns last 60 seconds of data from Redis
