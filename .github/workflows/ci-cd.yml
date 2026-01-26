@@ -458,7 +458,6 @@ jobs:
           -D clippy::all \
           -D clippy::pedantic \
           -W clippy::cargo
-          -A clippy::multiple-crate-versions
 
     - name: Detect unsafe code
       working-directory: ./backend
