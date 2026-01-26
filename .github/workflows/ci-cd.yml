@@ -1077,6 +1077,12 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
 
+      - name: Install system dependencies for Rust
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev
+
+
       - name: Backend cargo check
         working-directory: backend
         run: cargo check
