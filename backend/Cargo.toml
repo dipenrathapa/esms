@@ -2,6 +2,13 @@
 name = "esms-backend"
 version = "1.0.0"
 edition = "2021"
+description = "Environmental Stress Monitoring System - Real-time sensor data processing backend for healthcare applications"
+license = "MIT"
+repository = "https://github.com/YOUR_USERNAME/esms"
+readme = "../README.md"
+keywords = ["healthcare", "sensor", "monitoring", "fhir", "stress-analysis"]
+categories = ["web-programming", "healthcare"]
+authors = ["Your Name <your.email@example.com>"]
 
 [dependencies]
 actix-web = "4.9"
@@ -41,3 +48,9 @@ actix-web-httpauth = "0.7"
 serialport = "4.8"
 
 url = "2.5"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

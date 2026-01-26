@@ -2709,19 +2709,20 @@ impl AppConfig {
 // Error Handling (Centralized)
 // ======================================================
 #[derive(thiserror::Error, Debug)]
+#[allow(dead_code)]
 enum ApiError {
     #[error("Internal server error")]
     Internal,
-
+    
     #[error("Database error: {0}")]
     Database(String),
-
+    
     #[error("Redis error: {0}")]
     Redis(String),
-
+    
     #[error("Validation error: {0}")]
     Validation(String),
-
+    
     #[error("TCP connection error: {0}")]
     TcpConnection(String),
 }
@@ -2733,12 +2734,10 @@ impl actix_web::ResponseError for ApiError {
                 "error": "internal_error",
                 "message": "An internal error occurred"
             })),
-            ApiError::Database(msg) => {
-                HttpResponse::InternalServerError().json(serde_json::json!({
-                    "error": "database_error",
-                    "message": msg
-                }))
-            }
+            ApiError::Database(msg) => HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "database_error",
+                "message": msg
+            })),
             ApiError::Redis(msg) => HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "redis_error",
                 "message": msg
@@ -2747,12 +2746,10 @@ impl actix_web::ResponseError for ApiError {
                 "error": "validation_error",
                 "message": msg
             })),
-            ApiError::TcpConnection(msg) => {
-                HttpResponse::ServiceUnavailable().json(serde_json::json!({
-                    "error": "tcp_connection_error",
-                    "message": msg
-                }))
-            }
+            ApiError::TcpConnection(msg) => HttpResponse::ServiceUnavailable().json(serde_json::json!({
+                "error": "tcp_connection_error",
+                "message": msg
+            })),
         }
     }
 }
@@ -2764,13 +2761,13 @@ impl actix_web::ResponseError for ApiError {
 pub enum ConfigError {
     #[error("Invalid Redis URL: {0}")]
     InvalidRedisUrl(String),
-
+    
     #[error("Invalid MySQL URL: {0}")]
     InvalidMysqlUrl(String),
-
+    
     #[error("Invalid bind address: {0}")]
     InvalidBindAddr(String),
-
+    
     #[error("Invalid serial TCP configuration: {0}")]
     InvalidSerialConfig(String),
 }
@@ -2787,7 +2784,7 @@ fn validate_config(config: &AppConfig) -> Result<(), ConfigError> {
     validate_redis_url(&config.redis_url)?;
     validate_mysql_url(&config.mysql_url)?;
     validate_bind_addr(&config.bind_addr)?;
-
+    
     if config.use_serial {
         validate_serial_config(&config.serial_tcp_host, config.serial_tcp_port)?;
     }
@@ -2802,15 +2799,13 @@ fn validate_config(config: &AppConfig) -> Result<(), ConfigError> {
 
 fn validate_redis_url(url: &str) -> Result<(), ConfigError> {
     if url.is_empty() {
-        return Err(ConfigError::InvalidRedisUrl(
-            "Redis URL is empty".to_string(),
-        ));
+        return Err(ConfigError::InvalidRedisUrl("Redis URL is empty".to_string()));
     }
 
     if !url.starts_with("redis://") && !url.starts_with("rediss://") {
-        return Err(ConfigError::InvalidRedisUrl(format!(
-            "Redis URL must start with redis:// or rediss://, got: {url}"
-        )));
+        return Err(ConfigError::InvalidRedisUrl(
+            format!("Redis URL must start with redis:// or rediss://, got: {url}")
+        ));
     }
 
     info!(
@@ -2824,19 +2819,18 @@ fn validate_redis_url(url: &str) -> Result<(), ConfigError> {
 
 fn validate_mysql_url(url: &str) -> Result<(), ConfigError> {
     if url.is_empty() {
-        return Err(ConfigError::InvalidMysqlUrl(
-            "MySQL URL is empty".to_string(),
-        ));
+        return Err(ConfigError::InvalidMysqlUrl("MySQL URL is empty".to_string()));
     }
 
     if !url.starts_with("mysql://") {
-        return Err(ConfigError::InvalidMysqlUrl(format!(
-            "MySQL URL must start with mysql://, got: {url}"
-        )));
+        return Err(ConfigError::InvalidMysqlUrl(
+            format!("MySQL URL must start with mysql://, got: {url}")
+        ));
     }
 
-    Url::parse(url)
-        .map_err(|e| ConfigError::InvalidMysqlUrl(format!("Invalid URL format: {e}")))?;
+    Url::parse(url).map_err(|e| {
+        ConfigError::InvalidMysqlUrl(format!("Invalid URL format: {e}"))
+    })?;
 
     info!(
         operation = "config_validation",
@@ -2849,13 +2843,12 @@ fn validate_mysql_url(url: &str) -> Result<(), ConfigError> {
 
 fn validate_bind_addr(addr: &str) -> Result<(), ConfigError> {
     if addr.is_empty() {
-        return Err(ConfigError::InvalidBindAddr(
-            "Bind address is empty".to_string(),
-        ));
+        return Err(ConfigError::InvalidBindAddr("Bind address is empty".to_string()));
     }
 
-    addr.parse::<SocketAddr>()
-        .map_err(|e| ConfigError::InvalidBindAddr(format!("Invalid socket address format: {e}")))?;
+    addr.parse::<SocketAddr>().map_err(|e| {
+        ConfigError::InvalidBindAddr(format!("Invalid socket address format: {e}"))
+    })?;
 
     info!(
         operation = "config_validation",
@@ -2869,15 +2862,13 @@ fn validate_bind_addr(addr: &str) -> Result<(), ConfigError> {
 
 fn validate_serial_config(host: &str, port: u16) -> Result<(), ConfigError> {
     if host.is_empty() {
-        return Err(ConfigError::InvalidSerialConfig(
-            "Serial TCP host is empty".to_string(),
-        ));
+        return Err(ConfigError::InvalidSerialConfig("Serial TCP host is empty".to_string()));
     }
 
     if port == 0 {
-        return Err(ConfigError::InvalidSerialConfig(format!(
-            "Serial TCP port {port} is out of valid range (1-65535)"
-        )));
+        return Err(ConfigError::InvalidSerialConfig(
+            format!("Serial TCP port {port} is out of valid range (1-65535)")
+        ));
     }
 
     info!(
@@ -2924,6 +2915,7 @@ struct AppState {
     mysql: Pool,
     memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>,
     config: AppConfig,
+    #[allow(dead_code)]
     shutdown_token: CancellationToken,
     retry_config: RetryConfig,
 }
@@ -2965,7 +2957,7 @@ where
 
     loop {
         attempt += 1;
-
+        
         match operation().await {
             Ok(result) => {
                 if attempt > 1 {
@@ -2995,9 +2987,12 @@ where
                     error = %e,
                     "Operation failed, retrying..."
                 );
-
+                
                 sleep(Duration::from_millis(delay)).await;
-                delay = ((delay as f64 * config.multiplier) as u64).min(config.max_delay_ms);
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+                {
+                    delay = ((delay as f64 * config.multiplier) as u64).min(config.max_delay_ms);
+                }
             }
         }
     }
@@ -3050,7 +3045,7 @@ async fn read_sensor_from_tcp(host: &str, port: u16) -> Option<SensorData> {
                 port = %port,
                 "Successfully connected to TCP sensor stream"
             );
-
+            
             let mut reader = BufReader::new(stream);
             let mut line = String::new();
             match reader.read_line(&mut line).await {
@@ -3107,7 +3102,7 @@ async fn read_sensor_from_tcp(host: &str, port: u16) -> Option<SensorData> {
 // ======================================================
 async fn sensor_task(state: web::Data<AppState>, shutdown_token: CancellationToken) {
     let mut ticker = interval(Duration::from_secs(1));
-
+    
     info!(
         operation = "sensor_task_start",
         use_serial = %state.config.use_serial,
@@ -3115,10 +3110,10 @@ async fn sensor_task(state: web::Data<AppState>, shutdown_token: CancellationTok
         serial_port = %state.config.serial_tcp_port,
         "Sensor background task started"
     );
-
+    
     loop {
         tokio::select! {
-            _ = shutdown_token.cancelled() => {
+            () = shutdown_token.cancelled() => {
                 info!(
                     operation = "sensor_task_shutdown",
                     "Sensor task received shutdown signal, cleaning up..."
@@ -3137,7 +3132,7 @@ async fn sensor_task(state: web::Data<AppState>, shutdown_token: CancellationTok
             }
         }
     }
-
+    
     info!(
         operation = "sensor_task_stopped",
         "Sensor task stopped gracefully"
@@ -3146,25 +3141,20 @@ async fn sensor_task(state: web::Data<AppState>, shutdown_token: CancellationTok
 
 async fn process_sensor_data(state: &web::Data<AppState>) -> Result<(), ApiError> {
     let data = if state.config.use_serial {
-        match read_sensor_from_tcp(&state.config.serial_tcp_host, state.config.serial_tcp_port)
-            .await
-        {
-            Some(sensor_data) => {
-                info!(
-                    operation = "sensor_data_source",
-                    source = "tcp",
-                    "Using real sensor data from TCP stream"
-                );
-                sensor_data
-            }
-            None => {
-                warn!(
-                    operation = "sensor_data_source",
-                    source = "simulation_fallback",
-                    "TCP read failed, falling back to simulated data"
-                );
-                simulate_sensor_data()
-            }
+        if let Some(sensor_data) = read_sensor_from_tcp(&state.config.serial_tcp_host, state.config.serial_tcp_port).await {
+            info!(
+                operation = "sensor_data_source",
+                source = "tcp",
+                "Using real sensor data from TCP stream"
+            );
+            sensor_data
+        } else {
+            warn!(
+                operation = "sensor_data_source",
+                source = "simulation_fallback",
+                "TCP read failed, falling back to simulated data"
+            );
+            simulate_sensor_data()
         }
     } else {
         info!(
@@ -3249,16 +3239,17 @@ async fn store_to_redis(
 ) -> Result<(), ApiError> {
     let timestamp = payload.data.timestamp.clone();
     let key = format!("sensor:{timestamp}");
-    let value = serde_json::to_string(&payload).map_err(|e| {
-        error!(
-            error = %e,
-            operation = "redis_serialization",
-            timestamp = %timestamp,
-            key = %key,
-            "Failed to serialize sensor data for Redis"
-        );
-        ApiError::Redis(format!("Serialization failed: {e}"))
-    })?;
+    let value = serde_json::to_string(&payload)
+        .map_err(|e| {
+            error!(
+                error = %e,
+                operation = "redis_serialization",
+                timestamp = %timestamp,
+                key = %key,
+                "Failed to serialize sensor data for Redis"
+            );
+            ApiError::Redis(format!("Serialization failed: {e}"))
+        })?;
 
     // Retry the entire operation (get connection + set)
     retry_with_backoff(
@@ -3267,7 +3258,7 @@ async fn store_to_redis(
             let key = key.clone();
             let value = value.clone();
             let timestamp = timestamp.clone();
-
+            
             async move {
                 let mut conn = redis
                     .lock()
@@ -3321,7 +3312,7 @@ async fn store_to_mysql(
     retry_config: &RetryConfig,
 ) -> Result<(), ApiError> {
     let timestamp = payload.data.timestamp.clone();
-
+    
     retry_with_backoff(
         || async {
             let mut conn = pool
@@ -3338,9 +3329,9 @@ async fn store_to_mysql(
                 })?;
 
             conn.exec_drop(
-                r#"INSERT INTO sensor_data 
+                r"INSERT INTO sensor_data 
                    (temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     payload.data.temperature,
                     payload.data.humidity,
@@ -3411,11 +3402,12 @@ async fn main() -> std::io::Result<()> {
         .json()
         .init();
 
-    let config = AppConfig::from_env_validated().map_err(|e| {
-        error!(error = %e, "Configuration validation failed");
-        std::io::Error::other(e.to_string())
-    })?;
-
+    let config = AppConfig::from_env_validated()
+        .map_err(|e| {
+            error!(error = %e, "Configuration validation failed");
+            std::io::Error::other(e.to_string())
+        })?;
+    
     info!(
         operation = "application_startup",
         use_serial = %config.use_serial,
@@ -3429,15 +3421,16 @@ async fn main() -> std::io::Result<()> {
     let shutdown_token = CancellationToken::new();
 
     // Initialize Redis
-    let redis = redis::Client::open(config.redis_url.clone()).map_err(|e| {
-        error!(
-            error = %e,
-            operation = "redis_init",
-            "Failed to initialize Redis client"
-        );
-        std::io::Error::other(format!("Redis init failed: {e}"))
-    })?;
-
+    let redis = redis::Client::open(config.redis_url.clone())
+        .map_err(|e| {
+            error!(
+                error = %e,
+                operation = "redis_init",
+                "Failed to initialize Redis client"
+            );
+            std::io::Error::other(format!("Redis init failed: {e}"))
+        })?;
+    
     info!(
         operation = "redis_initialized",
         "Redis client initialized successfully"
@@ -3445,7 +3438,7 @@ async fn main() -> std::io::Result<()> {
 
     // Initialize MySQL
     let mysql = Pool::new(Opts::from_url(&config.mysql_url).unwrap());
-
+    
     info!(
         operation = "mysql_initialized",
         "MySQL connection pool initialized successfully"
@@ -3489,19 +3482,22 @@ async fn main() -> std::io::Result<()> {
         tokio::signal::ctrl_c()
             .await
             .expect("Failed to listen for ctrl-c");
-
+        
         info!(
             operation = "shutdown_signal_received",
             "Shutdown signal received, initiating graceful shutdown..."
         );
-
+        
         // Trigger cancellation token to stop background tasks
         shutdown_token.cancel();
-
+        
         // Stop HTTP server gracefully
         server_handle.stop(true).await;
-
-        info!(operation = "http_server_stopped", "HTTP server stopped");
+        
+        info!(
+            operation = "http_server_stopped",
+            "HTTP server stopped"
+        );
     };
 
     // Run server and wait for shutdown signal
@@ -3552,7 +3548,7 @@ mod tests {
     // ====================================================
     // Stress Calculation Tests
     // ====================================================
-
+    
     #[test]
     fn test_stress_index_returns_value_in_range() {
         let data = SensorData {
@@ -3563,12 +3559,9 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
+        
         let index = calculate_stress_index(&data);
-        assert!(
-            (0.0..=1.0).contains(&index),
-            "Stress index should be between 0 and 1"
-        );
+        assert!((0.0..=1.0).contains(&index), "Stress index should be between 0 and 1");
     }
 
     #[test]
@@ -3581,7 +3574,7 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
+        
         let index = calculate_stress_index(&data);
         assert!(index < 0.1, "Minimum stress should be very low");
     }
@@ -3596,7 +3589,7 @@ mod tests {
             motion: true,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
+        
         let index = calculate_stress_index(&data);
         assert!(index > 0.5, "High vitals should produce high stress index");
     }
@@ -3611,12 +3604,9 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
+        
         let index = calculate_stress_index(&data);
-        assert!(
-            (0.3..=0.7).contains(&index),
-            "Moderate values should produce moderate stress"
-        );
+        assert!((0.3..=0.7).contains(&index), "Moderate values should produce moderate stress");
     }
 
     // ====================================================
@@ -3666,11 +3656,8 @@ mod tests {
             motion: true,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
-        assert!(
-            data.validate().is_ok(),
-            "Valid sensor data should pass validation"
-        );
+        
+        assert!(data.validate().is_ok(), "Valid sensor data should pass validation");
     }
 
     #[test]
@@ -3683,11 +3670,8 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
-        assert!(
-            data.validate().is_err(),
-            "Temperature below 0 should fail validation"
-        );
+        
+        assert!(data.validate().is_err(), "Temperature below 0 should fail validation");
     }
 
     #[test]
@@ -3700,11 +3684,8 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
-        assert!(
-            data.validate().is_err(),
-            "Temperature above 60 should fail validation"
-        );
+        
+        assert!(data.validate().is_err(), "Temperature above 60 should fail validation");
     }
 
     #[test]
@@ -3717,11 +3698,8 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
-        assert!(
-            data.validate().is_err(),
-            "Humidity above 100 should fail validation"
-        );
+        
+        assert!(data.validate().is_err(), "Humidity above 100 should fail validation");
     }
 
     #[test]
@@ -3734,11 +3712,8 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
-        assert!(
-            data.validate().is_err(),
-            "Noise above 120 should fail validation"
-        );
+        
+        assert!(data.validate().is_err(), "Noise above 120 should fail validation");
     }
 
     #[test]
@@ -3751,11 +3726,8 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
-        assert!(
-            data.validate().is_err(),
-            "Heart rate below 30 should fail validation"
-        );
+        
+        assert!(data.validate().is_err(), "Heart rate below 30 should fail validation");
     }
 
     #[test]
@@ -3768,11 +3740,8 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-
-        assert!(
-            data.validate().is_err(),
-            "Heart rate above 200 should fail validation"
-        );
+        
+        assert!(data.validate().is_err(), "Heart rate above 200 should fail validation");
     }
 
     #[test]
@@ -3785,10 +3754,7 @@ mod tests {
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-        assert!(
-            min_data.validate().is_ok(),
-            "Minimum boundary values should be valid"
-        );
+        assert!(min_data.validate().is_ok(), "Minimum boundary values should be valid");
 
         let max_data = SensorData {
             temperature: 60.0,
@@ -3798,10 +3764,7 @@ mod tests {
             motion: true,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
-        assert!(
-            max_data.validate().is_ok(),
-            "Maximum boundary values should be valid"
-        );
+        assert!(max_data.validate().is_ok(), "Maximum boundary values should be valid");
     }
 
     // ====================================================
@@ -3812,10 +3775,7 @@ mod tests {
     fn test_simulate_sensor_data_returns_valid_data() {
         for _ in 0..100 {
             let data = simulate_sensor_data();
-            assert!(
-                data.validate().is_ok(),
-                "Simulated data should always be valid"
-            );
+            assert!(data.validate().is_ok(), "Simulated data should always be valid");
         }
     }
 
@@ -3823,7 +3783,7 @@ mod tests {
     fn test_simulate_sensor_data_ranges() {
         for _ in 0..100 {
             let data = simulate_sensor_data();
-
+            
             assert!(data.temperature >= 20.0 && data.temperature < 35.0);
             assert!(data.humidity >= 40.0 && data.humidity < 80.0);
             assert!(data.noise >= 50.0 && data.noise < 90.0);
