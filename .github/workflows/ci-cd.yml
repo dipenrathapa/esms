@@ -1081,6 +1081,11 @@ jobs:
         working-directory: backend
         run: cargo check
 
+      - name: Run backend tests
+        working-directory: backend
+        run: cargo test
+
+
       - name: Validate docker-compose file
         run: docker compose config
 
