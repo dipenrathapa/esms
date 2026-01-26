@@ -330,7 +330,7 @@ name: ESMS CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, ci-cd-working]
   pull_request:
     branches: [ main ]
 
