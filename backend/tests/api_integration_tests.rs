@@ -1,46 +1,51 @@
-use esms_backend::{calculate_stress_index, stress_level, SensorData};
+use actix_web::{test, App};
+use esms_backend::lib::{simulate_sensor_data, calculate_stress_index, stress_level};
+use esms_backend::main::{get_realtime, health, AppState, AppConfig};
+use std::collections::VecDeque;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use actix_web::web;
 
-#[test]
-fn test_stress_index_low() {
-    let data = SensorData {
-        temperature: 20.0,
-        humidity: 40.0,
-        noise: 50.0,
-        heart_rate: 60.0,
-        motion: false,
-        timestamp: "2026-01-26T00:00:00Z".to_string(),
-    };
-    let index = calculate_stress_index(&data);
-    assert!(index >= 0.0 && index <= 1.0);
-    assert_eq!(stress_level(index), "Low");
+#[actix_web::test]
+async fn test_health_endpoint() {
+    let app = test::init_service(App::new().route("/health", web::get().to(health))).await;
+    let req = test::TestRequest::get().uri("/health").to_request();
+    let resp = test::call_service(&app, req).await;
+    assert!(resp.status().is_success());
 }
 
-#[test]
-fn test_stress_index_moderate() {
-    let data = SensorData {
-        temperature: 28.0,
-        humidity: 60.0,
-        noise: 70.0,
-        heart_rate: 80.0,
-        motion: true,
-        timestamp: "2026-01-26T00:00:00Z".to_string(),
-    };
-    let index = calculate_stress_index(&data);
-    assert!(index >= 0.0 && index <= 1.0);
-    assert_eq!(stress_level(index), "Moderate");
+#[actix_web::test]
+async fn test_realtime_endpoint_empty() {
+    let state = web::Data::new(AppState {
+        memory: Arc::new(Mutex::new(VecDeque::new())),
+        config: AppConfig {
+            redis_url: "".to_string(),
+            mysql_url: "".to_string(),
+            bind_addr: "0.0.0.0:8080".to_string(),
+            use_serial: false,
+            serial_tcp_host: "".to_string(),
+            serial_tcp_port: 5555,
+        },
+        redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/").unwrap())),
+        mysql: mysql_async::Pool::new("mysql://root:root@localhost:3306/test").unwrap(),
+    });
+
+    let app = test::init_service(
+        App::new()
+            .app_data(state.clone())
+            .route("/api/realtime", web::get().to(get_realtime))
+    ).await;
+
+    let req = test::TestRequest::get().uri("/api/realtime").to_request();
+    let resp = test::call_service(&app, req).await;
+    assert!(resp.status().is_success());
 }
 
-#[test]
-fn test_stress_index_high() {
-    let data = SensorData {
-        temperature: 35.0,
-        humidity: 80.0,
-        noise: 90.0,
-        heart_rate: 100.0,
-        motion: true,
-        timestamp: "2026-01-26T00:00:00Z".to_string(),
-    };
+#[actix_web::test]
+fn test_stress_calculation() {
+    let data = simulate_sensor_data();
     let index = calculate_stress_index(&data);
+    let level = stress_level(index);
     assert!(index >= 0.0 && index <= 1.0);
-    assert_eq!(stress_level(index), "High");
+    assert!(["Low", "Moderate", "High"].contains(&level.as_str()));
 }

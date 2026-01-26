@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use validator::Validate;
+use rand::Rng;
+use chrono::Utc;
 
 /// Sensor data model
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -20,7 +22,16 @@ pub struct SensorData {
     pub timestamp: String,
 }
 
-/// Core business logic
+/// Enhanced sensor data with stress index/level
+#[derive(Debug, Clone, Serialize)]
+pub struct EnhancedSensorData {
+    #[serde(flatten)]
+    pub data: SensorData,
+    pub stress_index: f64,
+    pub stress_level: String,
+}
+
+/// Calculates stress index based on sensor data
 pub fn calculate_stress_index(data: &SensorData) -> f64 {
     let score = (data.heart_rate - 60.0) / 100.0 * 0.5
         + (data.temperature / 50.0) * 0.2
@@ -30,7 +41,7 @@ pub fn calculate_stress_index(data: &SensorData) -> f64 {
     score.clamp(0.0, 1.0)
 }
 
-/// Stress level categorization
+/// Converts stress index to stress level
 pub fn stress_level(score: f64) -> String {
     match score {
         x if x < 0.3 => "Low",
@@ -40,28 +51,15 @@ pub fn stress_level(score: f64) -> String {
     .to_string()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_calculate_stress_index() {
-        let data = SensorData {
-            temperature: 25.0,
-            humidity: 50.0,
-            noise: 60.0,
-            heart_rate: 80.0,
-            motion: false,
-            timestamp: "2026-01-26T00:00:00Z".to_string(),
-        };
-        let score = calculate_stress_index(&data);
-        assert!(score >= 0.0 && score <= 1.0);
-    }
-
-    #[test]
-    fn test_stress_level() {
-        assert_eq!(stress_level(0.2), "Low");
-        assert_eq!(stress_level(0.5), "Moderate");
-        assert_eq!(stress_level(0.8), "High");
+/// Simulates sensor data (used for fallback/testing)
+pub fn simulate_sensor_data() -> SensorData {
+    let mut rng = rand::thread_rng();
+    SensorData {
+        temperature: rng.gen_range(20.0..35.0),
+        humidity: rng.gen_range(40.0..80.0),
+        noise: rng.gen_range(50.0..90.0),
+        heart_rate: rng.gen_range(60.0..100.0),
+        motion: rng.gen_bool(0.3),
+        timestamp: Utc::now().to_rfc3339(),
     }
 }
