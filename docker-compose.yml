@@ -91,7 +91,6 @@ services:
     env_file:
       - .env
     environment:
-      # 🔴 FORCE SAFE MODE IN DOCKER
       - USE_SERIAL=true
       - RUST_LOG=info
     depends_on:
