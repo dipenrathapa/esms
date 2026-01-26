@@ -1,6 +1,13 @@
-use actix_web::{test, web, App};
+use actix_web::{test, App, web};
 use esms_backend::lib::{
-    calculate_stress_index, simulate_sensor_data, stress_level, EnhancedSensorData, SensorData,
+    simulate_sensor_data,
+    calculate_stress_index,
+    stress_level,
+    AppState,
+    AppConfig,
+    EnhancedSensorData,
+    get_realtime,
+    health,
 };
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -8,10 +15,6 @@ use tokio::sync::Mutex;
 
 #[actix_web::test]
 async fn test_health_endpoint() {
-    async fn health() -> actix_web::Result<actix_web::HttpResponse> {
-        Ok(actix_web::HttpResponse::Ok().json(serde_json::json!({ "status": "healthy" })))
-    }
-
     let app = test::init_service(App::new().route("/health", web::get().to(health))).await;
     let req = test::TestRequest::get().uri("/health").to_request();
     let resp = test::call_service(&app, req).await;
@@ -20,28 +23,27 @@ async fn test_health_endpoint() {
 
 #[actix_web::test]
 async fn test_realtime_endpoint_empty() {
-    struct AppStateMock {
-        memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>,
-    }
+    let memory: Arc<Mutex<VecDeque<EnhancedSensorData>>> = Arc::new(Mutex::new(VecDeque::new()));
 
-    let state = web::Data::new(AppStateMock {
-        memory: Arc::new(Mutex::new(VecDeque::new())),
+    let app_state = web::Data::new(AppState {
+        memory: memory.clone(),
+        config: AppConfig {
+            redis_url: "".to_string(),
+            mysql_url: "".to_string(),
+            bind_addr: "0.0.0.0:8080".to_string(),
+            use_serial: false,
+            serial_tcp_host: "".to_string(),
+            serial_tcp_port: 5555,
+        },
+        redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/").unwrap())),
+        mysql: mysql_async::Pool::new("mysql://root:root@localhost:3306/test"), // removed .unwrap()
     });
-
-    async fn get_realtime(
-        state: web::Data<AppStateMock>,
-    ) -> actix_web::Result<actix_web::HttpResponse> {
-        let mem = state.memory.lock().await;
-        let data: Vec<_> = mem.iter().rev().take(60).cloned().collect();
-        Ok(actix_web::HttpResponse::Ok().json(data))
-    }
 
     let app = test::init_service(
         App::new()
-            .app_data(state.clone())
-            .route("/api/realtime", web::get().to(get_realtime)),
-    )
-    .await;
+            .app_data(app_state.clone())
+            .route("/api/realtime", web::get().to(get_realtime))
+    ).await;
 
     let req = test::TestRequest::get().uri("/api/realtime").to_request();
     let resp = test::call_service(&app, req).await;
