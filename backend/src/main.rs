@@ -336,6 +336,454 @@
 
 
 
+// use actix_cors::Cors;
+// use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
+// use chrono::Utc;
+// use dotenv::dotenv;
+// use mysql_async::{prelude::Queryable, Opts, Pool};
+// use rand::Rng;
+// use redis::AsyncCommands;
+// use serde::{Deserialize, Serialize};
+// use std::{collections::VecDeque, env, sync::Arc};
+// use tokio::{
+//     io::{AsyncBufReadExt, BufReader},
+//     net::TcpStream,
+//     sync::Mutex,
+//     time::{interval, Duration},
+// };
+// use tokio_util::sync::CancellationToken;
+// use tracing::{error, info, warn};
+// use tracing_subscriber::{fmt, EnvFilter};
+// use validator::Validate;
+
+// // ======================================================
+// // Configuration
+// // ======================================================
+// #[derive(Clone)]
+// struct AppConfig {
+//     redis_url: String,
+//     mysql_url: String,
+//     bind_addr: String,
+//     use_serial: bool,
+//     serial_tcp_host: String,
+//     serial_tcp_port: u16,
+// }
+
+// impl AppConfig {
+//     fn from_env() -> Self {
+//         let use_serial = env::var("USE_SERIAL")
+//             .unwrap_or_else(|_| "true".to_string())
+//             .parse::<bool>()
+//             .unwrap_or(true);
+
+//         let serial_tcp_port = env::var("SERIAL_TCP_PORT")
+//             .unwrap_or_else(|_| "5555".to_string())
+//             .parse::<u16>()
+//             .unwrap_or(5555);
+
+//         Self {
+//             redis_url: env::var("REDIS_URL").expect("REDIS_URL missing"),
+//             mysql_url: env::var("MYSQL_DATABASE_URL").expect("MYSQL_DATABASE_URL missing"),
+//             bind_addr: env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".to_string()),
+//             use_serial,
+//             serial_tcp_host: env::var("SERIAL_TCP_HOST")
+//                 .unwrap_or_else(|_| "host.docker.internal".to_string()),
+//             serial_tcp_port,
+//         }
+//     }
+// }
+
+// // ======================================================
+// // Error Handling (Centralized)
+// // ======================================================
+// #[derive(thiserror::Error, Debug)]
+// enum ApiError {
+//     #[error("Internal server error")]
+//     Internal,
+    
+//     #[error("Database error: {0}")]
+//     Database(String),
+    
+//     #[error("Redis error: {0}")]
+//     Redis(String),
+    
+//     #[error("Validation error: {0}")]
+//     Validation(String),
+    
+//     #[error("TCP connection error: {0}")]
+//     TcpConnection(String),
+// }
+
+// impl actix_web::ResponseError for ApiError {
+//     fn error_response(&self) -> HttpResponse {
+//         match self {
+//             ApiError::Internal => HttpResponse::InternalServerError().json(serde_json::json!({
+//                 "error": "internal_error",
+//                 "message": "An internal error occurred"
+//             })),
+//             ApiError::Database(msg) => HttpResponse::InternalServerError().json(serde_json::json!({
+//                 "error": "database_error",
+//                 "message": msg
+//             })),
+//             ApiError::Redis(msg) => HttpResponse::InternalServerError().json(serde_json::json!({
+//                 "error": "redis_error",
+//                 "message": msg
+//             })),
+//             ApiError::Validation(msg) => HttpResponse::BadRequest().json(serde_json::json!({
+//                 "error": "validation_error",
+//                 "message": msg
+//             })),
+//             ApiError::TcpConnection(msg) => HttpResponse::ServiceUnavailable().json(serde_json::json!({
+//                 "error": "tcp_connection_error",
+//                 "message": msg
+//             })),
+//         }
+//     }
+// }
+
+// // Helper function for logging and converting errors
+// fn log_and_convert_error<E: std::fmt::Display>(context: &str, error: E) -> ApiError {
+//     error!("{}: {}", context, error);
+//     ApiError::Internal
+// }
+
+// // ======================================================
+// // Models
+// // ======================================================
+// #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+// struct SensorData {
+//     #[validate(range(min = 0.0, max = 60.0))]
+//     temperature: f64,
+//     #[validate(range(min = 0.0, max = 100.0))]
+//     humidity: f64,
+//     #[validate(range(min = 0.0, max = 120.0))]
+//     noise: f64,
+//     #[validate(range(min = 30.0, max = 200.0))]
+//     heart_rate: f64,
+//     motion: bool,
+//     timestamp: String,
+// }
+
+// #[derive(Debug, Clone, Serialize)]
+// struct EnhancedSensorData {
+//     #[serde(flatten)]
+//     data: SensorData,
+//     stress_index: f64,
+//     stress_level: String,
+// }
+
+// // ======================================================
+// // App State
+// // ======================================================
+// struct AppState {
+//     redis: Arc<Mutex<redis::Client>>,
+//     mysql: Pool,
+//     memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>,
+//     config: AppConfig,
+//     shutdown_token: CancellationToken,
+// }
+
+// // ======================================================
+// // Business Logic
+// // ======================================================
+// fn calculate_stress_index(data: &SensorData) -> f64 {
+//     let score = (data.heart_rate - 60.0) / 100.0 * 0.5
+//         + (data.temperature / 50.0) * 0.2
+//         + (data.humidity / 100.0) * 0.2
+//         + (data.noise / 100.0) * 0.1;
+//     score.clamp(0.0, 1.0)
+// }
+
+// fn stress_level(score: f64) -> String {
+//     match score {
+//         x if x < 0.3 => "Low",
+//         x if x < 0.6 => "Moderate",
+//         _ => "High",
+//     }
+//     .to_string()
+// }
+
+// // ======================================================
+// // Sensor Simulation
+// // ======================================================
+// fn simulate_sensor_data() -> SensorData {
+//     let mut rng = rand::thread_rng();
+//     SensorData {
+//         temperature: rng.gen_range(20.0..35.0),
+//         humidity: rng.gen_range(40.0..80.0),
+//         noise: rng.gen_range(50.0..90.0),
+//         heart_rate: rng.gen_range(60.0..100.0),
+//         motion: rng.gen_bool(0.3),
+//         timestamp: Utc::now().to_rfc3339(),
+//     }
+// }
+
+// // ======================================================
+// // TCP Serial Reading (Mac/Docker compatible)
+// // ======================================================
+// async fn read_sensor_from_tcp(host: &str, port: u16) -> Option<SensorData> {
+//     match TcpStream::connect((host, port)).await {
+//         Ok(stream) => {
+//             let mut reader = BufReader::new(stream);
+//             let mut line = String::new();
+//             match reader.read_line(&mut line).await {
+//                 Ok(_) => {
+//                     if let Ok(sensor) = serde_json::from_str::<SensorData>(&line) {
+//                         Some(sensor)
+//                     } else {
+//                         warn!("Failed to parse JSON from TCP: {}", line.trim());
+//                         None
+//                     }
+//                 }
+//                 Err(e) => {
+//                     warn!("TCP read error: {:?}", e);
+//                     None
+//                 }
+//             }
+//         }
+//         Err(e) => {
+//             warn!("TCP connect failed: {:?}", e);
+//             None
+//         }
+//     }
+// }
+
+// // ======================================================
+// // Background Task with Graceful Shutdown
+// // ======================================================
+// async fn sensor_task(state: web::Data<AppState>, shutdown_token: CancellationToken) {
+//     let mut ticker = interval(Duration::from_secs(1));
+    
+//     info!("Sensor task started");
+    
+//     loop {
+//         tokio::select! {
+//             _ = shutdown_token.cancelled() => {
+//                 info!("Sensor task received shutdown signal, cleaning up...");
+//                 break;
+//             }
+//             _ = ticker.tick() => {
+//                 if let Err(e) = process_sensor_data(&state).await {
+//                     error!("Error processing sensor data: {:?}", e);
+//                     // Continue running even on errors
+//                 }
+//             }
+//         }
+//     }
+    
+//     info!("Sensor task stopped gracefully");
+// }
+
+// async fn process_sensor_data(state: &web::Data<AppState>) -> Result<(), ApiError> {
+//     let data = if state.config.use_serial {
+//         read_sensor_from_tcp(&state.config.serial_tcp_host, state.config.serial_tcp_port)
+//             .await
+//             .unwrap_or_else(simulate_sensor_data)
+//     } else {
+//         simulate_sensor_data()
+//     };
+
+//     // Validate sensor data
+//     if let Err(e) = data.validate() {
+//         warn!("Validation failed: {:?}", e);
+//         return Err(ApiError::Validation(format!("{:?}", e)));
+//     }
+
+//     let index = calculate_stress_index(&data);
+//     let enhanced = EnhancedSensorData {
+//         stress_index: index,
+//         stress_level: stress_level(index),
+//         data,
+//     };
+
+//     // In-memory fallback (always succeeds)
+//     {
+//         let mut mem = state.memory.lock().await;
+//         mem.push_back(enhanced.clone());
+//         if mem.len() > 600 {
+//             mem.pop_front();
+//         }
+//     }
+
+//     // Redis (non-blocking, fire and forget with error logging)
+//     let redis = state.redis.clone();
+//     let redis_payload = enhanced.clone();
+//     tokio::spawn(async move {
+//         if let Err(e) = store_to_redis(redis, redis_payload).await {
+//             warn!("Redis storage failed: {:?}", e);
+//         }
+//     });
+
+//     // MySQL (non-blocking, fire and forget with error logging)
+//     let pool = state.mysql.clone();
+//     let db_payload = enhanced.clone();
+//     tokio::spawn(async move {
+//         if let Err(e) = store_to_mysql(pool, db_payload).await {
+//             warn!("MySQL storage failed: {:?}", e);
+//         }
+//     });
+
+//     Ok(())
+// }
+
+// async fn store_to_redis(
+//     redis: Arc<Mutex<redis::Client>>,
+//     payload: EnhancedSensorData,
+// ) -> Result<(), ApiError> {
+//     let mut conn = redis
+//         .lock()
+//         .await
+//         .get_multiplexed_async_connection()
+//         .await
+//         .map_err(|e| ApiError::Redis(format!("Connection failed: {}", e)))?;
+
+//     let key = format!("sensor:{}", payload.data.timestamp);
+//     let value = serde_json::to_string(&payload)
+//         .map_err(|e| ApiError::Redis(format!("Serialization failed: {}", e)))?;
+
+//     conn.set_ex::<_, _, ()>(key, value, 600)
+//         .await
+//         .map_err(|e| ApiError::Redis(format!("SET failed: {}", e)))?;
+
+//     Ok(())
+// }
+
+// async fn store_to_mysql(pool: Pool, payload: EnhancedSensorData) -> Result<(), ApiError> {
+//     let mut conn = pool
+//         .get_conn()
+//         .await
+//         .map_err(|e| ApiError::Database(format!("Connection failed: {}", e)))?;
+
+//     conn.exec_drop(
+//         r#"INSERT INTO sensor_data 
+//            (temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp) 
+//            VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
+//         (
+//             payload.data.temperature,
+//             payload.data.humidity,
+//             payload.data.noise,
+//             payload.data.heart_rate,
+//             payload.data.motion,
+//             payload.stress_index,
+//             payload.stress_level,
+//             payload.data.timestamp,
+//         ),
+//     )
+//     .await
+//     .map_err(|e| ApiError::Database(format!("Insert failed: {}", e)))?;
+
+//     Ok(())
+// }
+
+// // ======================================================
+// // API
+// // ======================================================
+// async fn health() -> Result<HttpResponse> {
+//     Ok(HttpResponse::Ok().json(serde_json::json!({
+//         "status": "healthy",
+//         "timestamp": Utc::now()
+//     })))
+// }
+
+// async fn get_realtime(state: web::Data<AppState>) -> Result<HttpResponse> {
+//     let mem = state.memory.lock().await;
+//     let data: Vec<_> = mem.iter().rev().take(60).cloned().collect();
+//     Ok(HttpResponse::Ok().json(data))
+// }
+
+// // ======================================================
+// // Main
+// // ======================================================
+// #[actix_web::main]
+// async fn main() -> std::io::Result<()> {
+//     dotenv().ok();
+
+//     fmt()
+//         .with_env_filter(EnvFilter::from_default_env())
+//         .json()
+//         .init();
+
+//     let config = AppConfig::from_env();
+//     info!("Starting ESMS backend (use_serial={})", config.use_serial);
+
+//     // Create cancellation token for graceful shutdown
+//     let shutdown_token = CancellationToken::new();
+
+//     // Initialize Redis
+//     let redis = redis::Client::open(config.redis_url.clone())
+//         .expect("Redis init failed");
+
+//     // Initialize MySQL
+//     let mysql = Pool::new(Opts::from_url(&config.mysql_url).unwrap());
+
+//     // Create app state
+//     let state = web::Data::new(AppState {
+//         redis: Arc::new(Mutex::new(redis)),
+//         mysql,
+//         memory: Arc::new(Mutex::new(VecDeque::new())),
+//         config: config.clone(),
+//         shutdown_token: shutdown_token.clone(),
+//     });
+
+//     // Spawn background sensor task with shutdown token
+//     let sensor_task_handle = tokio::spawn(sensor_task(state.clone(), shutdown_token.child_token()));
+
+//     // Create HTTP server
+//     let server = HttpServer::new(move || {
+//         App::new()
+//             .wrap(Logger::default())
+//             .wrap(Cors::permissive())
+//             .app_data(state.clone())
+//             .route("/health", web::get().to(health))
+//             .route("/api/realtime", web::get().to(get_realtime))
+//     })
+//     .bind(&config.bind_addr)?
+//     .run();
+
+//     info!("Server running on {}", config.bind_addr);
+
+//     let server_handle = server.handle();
+
+//     // Setup graceful shutdown signal handler
+//     let shutdown_signal = async move {
+//         tokio::signal::ctrl_c()
+//             .await
+//             .expect("Failed to listen for ctrl-c");
+        
+//         info!("Shutdown signal received, initiating graceful shutdown...");
+        
+//         // Trigger cancellation token to stop background tasks
+//         shutdown_token.cancel();
+        
+//         // Stop HTTP server gracefully
+//         server_handle.stop(true).await;
+        
+//         info!("HTTP server stopped");
+//     };
+
+//     // Run server and wait for shutdown signal
+//     tokio::select! {
+//         result = server => {
+//             result?;
+//         }
+//         _ = shutdown_signal => {
+//             info!("Shutdown signal handled");
+//         }
+//     }
+
+//     // Wait for background task to complete
+//     match tokio::time::timeout(Duration::from_secs(10), sensor_task_handle).await {
+//         Ok(Ok(())) => info!("Background task stopped successfully"),
+//         Ok(Err(e)) => error!("Background task error: {:?}", e),
+//         Err(_) => error!("Background task did not stop within timeout"),
+//     }
+
+//     info!("Application shutdown complete");
+//     Ok(())
+// }
+
+
+
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
 use chrono::Utc;
@@ -524,25 +972,59 @@ fn simulate_sensor_data() -> SensorData {
 async fn read_sensor_from_tcp(host: &str, port: u16) -> Option<SensorData> {
     match TcpStream::connect((host, port)).await {
         Ok(stream) => {
+            info!(
+                operation = "tcp_connect",
+                host = %host,
+                port = %port,
+                "Successfully connected to TCP sensor stream"
+            );
+            
             let mut reader = BufReader::new(stream);
             let mut line = String::new();
             match reader.read_line(&mut line).await {
-                Ok(_) => {
+                Ok(bytes_read) => {
                     if let Ok(sensor) = serde_json::from_str::<SensorData>(&line) {
+                        info!(
+                            operation = "tcp_read",
+                            host = %host,
+                            port = %port,
+                            bytes_read = %bytes_read,
+                            temperature = %sensor.temperature,
+                            heart_rate = %sensor.heart_rate,
+                            "Successfully parsed sensor data from TCP"
+                        );
                         Some(sensor)
                     } else {
-                        warn!("Failed to parse JSON from TCP: {}", line.trim());
+                        warn!(
+                            operation = "tcp_parse",
+                            host = %host,
+                            port = %port,
+                            raw_data = %line.trim(),
+                            "Failed to parse JSON from TCP stream"
+                        );
                         None
                     }
                 }
                 Err(e) => {
-                    warn!("TCP read error: {:?}", e);
+                    error!(
+                        error = %e,
+                        operation = "tcp_read",
+                        host = %host,
+                        port = %port,
+                        "Failed to read data from TCP stream"
+                    );
                     None
                 }
             }
         }
         Err(e) => {
-            warn!("TCP connect failed: {:?}", e);
+            error!(
+                error = %e,
+                operation = "tcp_connect",
+                host = %host,
+                port = %port,
+                "Failed to connect to TCP sensor stream"
+            );
             None
         }
     }
@@ -554,38 +1036,81 @@ async fn read_sensor_from_tcp(host: &str, port: u16) -> Option<SensorData> {
 async fn sensor_task(state: web::Data<AppState>, shutdown_token: CancellationToken) {
     let mut ticker = interval(Duration::from_secs(1));
     
-    info!("Sensor task started");
+    info!(
+        operation = "sensor_task_start",
+        use_serial = %state.config.use_serial,
+        serial_host = %state.config.serial_tcp_host,
+        serial_port = %state.config.serial_tcp_port,
+        "Sensor background task started"
+    );
     
     loop {
         tokio::select! {
             _ = shutdown_token.cancelled() => {
-                info!("Sensor task received shutdown signal, cleaning up...");
+                info!(
+                    operation = "sensor_task_shutdown",
+                    "Sensor task received shutdown signal, cleaning up..."
+                );
                 break;
             }
             _ = ticker.tick() => {
                 if let Err(e) = process_sensor_data(&state).await {
-                    error!("Error processing sensor data: {:?}", e);
+                    error!(
+                        error = ?e,
+                        operation = "sensor_task_process",
+                        "Error processing sensor data in background task"
+                    );
                     // Continue running even on errors
                 }
             }
         }
     }
     
-    info!("Sensor task stopped gracefully");
+    info!(
+        operation = "sensor_task_stopped",
+        "Sensor task stopped gracefully"
+    );
 }
 
 async fn process_sensor_data(state: &web::Data<AppState>) -> Result<(), ApiError> {
     let data = if state.config.use_serial {
-        read_sensor_from_tcp(&state.config.serial_tcp_host, state.config.serial_tcp_port)
-            .await
-            .unwrap_or_else(simulate_sensor_data)
+        match read_sensor_from_tcp(&state.config.serial_tcp_host, state.config.serial_tcp_port).await {
+            Some(sensor_data) => {
+                info!(
+                    operation = "sensor_data_source",
+                    source = "tcp",
+                    "Using real sensor data from TCP stream"
+                );
+                sensor_data
+            }
+            None => {
+                warn!(
+                    operation = "sensor_data_source",
+                    source = "simulation_fallback",
+                    "TCP read failed, falling back to simulated data"
+                );
+                simulate_sensor_data()
+            }
+        }
     } else {
+        info!(
+            operation = "sensor_data_source",
+            source = "simulation",
+            "Using simulated sensor data"
+        );
         simulate_sensor_data()
     };
 
     // Validate sensor data
     if let Err(e) = data.validate() {
-        warn!("Validation failed: {:?}", e);
+        warn!(
+            operation = "sensor_validation",
+            error = ?e,
+            temperature = %data.temperature,
+            humidity = %data.humidity,
+            heart_rate = %data.heart_rate,
+            "Sensor data validation failed"
+        );
         return Err(ApiError::Validation(format!("{:?}", e)));
     }
 
@@ -603,6 +1128,13 @@ async fn process_sensor_data(state: &web::Data<AppState>) -> Result<(), ApiError
         if mem.len() > 600 {
             mem.pop_front();
         }
+        info!(
+            operation = "memory_store",
+            buffer_size = %mem.len(),
+            timestamp = %enhanced.data.timestamp,
+            stress_level = %enhanced.stress_level,
+            "Stored sensor data in memory buffer"
+        );
     }
 
     // Redis (non-blocking, fire and forget with error logging)
@@ -610,7 +1142,12 @@ async fn process_sensor_data(state: &web::Data<AppState>) -> Result<(), ApiError
     let redis_payload = enhanced.clone();
     tokio::spawn(async move {
         if let Err(e) = store_to_redis(redis, redis_payload).await {
-            warn!("Redis storage failed: {:?}", e);
+            // Error already logged in store_to_redis
+            warn!(
+                error = ?e,
+                operation = "background_redis_store",
+                "Redis background task failed"
+            );
         }
     });
 
@@ -619,7 +1156,12 @@ async fn process_sensor_data(state: &web::Data<AppState>) -> Result<(), ApiError
     let db_payload = enhanced.clone();
     tokio::spawn(async move {
         if let Err(e) = store_to_mysql(pool, db_payload).await {
-            warn!("MySQL storage failed: {:?}", e);
+            // Error already logged in store_to_mysql
+            warn!(
+                error = ?e,
+                operation = "background_mysql_store",
+                "MySQL background task failed"
+            );
         }
     });
 
@@ -630,29 +1172,76 @@ async fn store_to_redis(
     redis: Arc<Mutex<redis::Client>>,
     payload: EnhancedSensorData,
 ) -> Result<(), ApiError> {
+    let timestamp = payload.data.timestamp.clone();
+    
     let mut conn = redis
         .lock()
         .await
         .get_multiplexed_async_connection()
         .await
-        .map_err(|e| ApiError::Redis(format!("Connection failed: {}", e)))?;
+        .map_err(|e| {
+            error!(
+                error = %e,
+                operation = "redis_connection",
+                timestamp = %timestamp,
+                "Failed to establish Redis connection"
+            );
+            ApiError::Redis(format!("Connection failed: {}", e))
+        })?;
 
-    let key = format!("sensor:{}", payload.data.timestamp);
+    let key = format!("sensor:{}", timestamp);
     let value = serde_json::to_string(&payload)
-        .map_err(|e| ApiError::Redis(format!("Serialization failed: {}", e)))?;
+        .map_err(|e| {
+            error!(
+                error = %e,
+                operation = "redis_serialization",
+                timestamp = %timestamp,
+                key = %key,
+                "Failed to serialize sensor data for Redis"
+            );
+            ApiError::Redis(format!("Serialization failed: {}", e))
+        })?;
 
-    conn.set_ex::<_, _, ()>(key, value, 600)
+    conn.set_ex::<_, _, ()>(key.clone(), value, 600)
         .await
-        .map_err(|e| ApiError::Redis(format!("SET failed: {}", e)))?;
+        .map_err(|e| {
+            error!(
+                error = %e,
+                operation = "redis_set",
+                timestamp = %timestamp,
+                key = %key,
+                ttl = 600,
+                "Failed to set value in Redis"
+            );
+            ApiError::Redis(format!("SET failed: {}", e))
+        })?;
+
+    info!(
+        operation = "redis_set",
+        timestamp = %timestamp,
+        key = %key,
+        stress_level = %payload.stress_level,
+        "Successfully stored sensor data in Redis"
+    );
 
     Ok(())
 }
 
 async fn store_to_mysql(pool: Pool, payload: EnhancedSensorData) -> Result<(), ApiError> {
+    let timestamp = payload.data.timestamp.clone();
+    
     let mut conn = pool
         .get_conn()
         .await
-        .map_err(|e| ApiError::Database(format!("Connection failed: {}", e)))?;
+        .map_err(|e| {
+            error!(
+                error = %e,
+                operation = "mysql_connection",
+                timestamp = %timestamp,
+                "Failed to get MySQL connection from pool"
+            );
+            ApiError::Database(format!("Connection failed: {}", e))
+        })?;
 
     conn.exec_drop(
         r#"INSERT INTO sensor_data 
@@ -665,12 +1254,32 @@ async fn store_to_mysql(pool: Pool, payload: EnhancedSensorData) -> Result<(), A
             payload.data.heart_rate,
             payload.data.motion,
             payload.stress_index,
-            payload.stress_level,
-            payload.data.timestamp,
+            payload.stress_level.clone(),
+            timestamp.clone(),
         ),
     )
     .await
-    .map_err(|e| ApiError::Database(format!("Insert failed: {}", e)))?;
+    .map_err(|e| {
+        error!(
+            error = %e,
+            operation = "mysql_insert",
+            timestamp = %timestamp,
+            temperature = %payload.data.temperature,
+            humidity = %payload.data.humidity,
+            heart_rate = %payload.data.heart_rate,
+            stress_level = %payload.stress_level,
+            "Failed to insert sensor data into MySQL"
+        );
+        ApiError::Database(format!("Insert failed: {}", e))
+    })?;
+
+    info!(
+        operation = "mysql_insert",
+        timestamp = %timestamp,
+        stress_level = %payload.stress_level,
+        stress_index = %payload.stress_index,
+        "Successfully stored sensor data in MySQL"
+    );
 
     Ok(())
 }
@@ -704,17 +1313,42 @@ async fn main() -> std::io::Result<()> {
         .init();
 
     let config = AppConfig::from_env();
-    info!("Starting ESMS backend (use_serial={})", config.use_serial);
+    
+    info!(
+        operation = "application_startup",
+        use_serial = %config.use_serial,
+        bind_addr = %config.bind_addr,
+        serial_tcp_host = %config.serial_tcp_host,
+        serial_tcp_port = %config.serial_tcp_port,
+        "Starting ESMS backend"
+    );
 
     // Create cancellation token for graceful shutdown
     let shutdown_token = CancellationToken::new();
 
     // Initialize Redis
     let redis = redis::Client::open(config.redis_url.clone())
-        .expect("Redis init failed");
+        .map_err(|e| {
+            error!(
+                error = %e,
+                operation = "redis_init",
+                "Failed to initialize Redis client"
+            );
+            std::io::Error::new(std::io::ErrorKind::Other, format!("Redis init failed: {}", e))
+        })?;
+    
+    info!(
+        operation = "redis_initialized",
+        "Redis client initialized successfully"
+    );
 
     // Initialize MySQL
     let mysql = Pool::new(Opts::from_url(&config.mysql_url).unwrap());
+    
+    info!(
+        operation = "mysql_initialized",
+        "MySQL connection pool initialized successfully"
+    );
 
     // Create app state
     let state = web::Data::new(AppState {
@@ -740,7 +1374,11 @@ async fn main() -> std::io::Result<()> {
     .bind(&config.bind_addr)?
     .run();
 
-    info!("Server running on {}", config.bind_addr);
+    info!(
+        operation = "http_server_started",
+        bind_addr = %config.bind_addr,
+        "HTTP server is running"
+    );
 
     let server_handle = server.handle();
 
@@ -750,7 +1388,10 @@ async fn main() -> std::io::Result<()> {
             .await
             .expect("Failed to listen for ctrl-c");
         
-        info!("Shutdown signal received, initiating graceful shutdown...");
+        info!(
+            operation = "shutdown_signal_received",
+            "Shutdown signal received, initiating graceful shutdown..."
+        );
         
         // Trigger cancellation token to stop background tasks
         shutdown_token.cancel();
@@ -758,7 +1399,10 @@ async fn main() -> std::io::Result<()> {
         // Stop HTTP server gracefully
         server_handle.stop(true).await;
         
-        info!("HTTP server stopped");
+        info!(
+            operation = "http_server_stopped",
+            "HTTP server stopped"
+        );
     };
 
     // Run server and wait for shutdown signal
@@ -767,23 +1411,37 @@ async fn main() -> std::io::Result<()> {
             result?;
         }
         _ = shutdown_signal => {
-            info!("Shutdown signal handled");
+            info!(
+                operation = "shutdown_signal_handled",
+                "Shutdown signal handled"
+            );
         }
     }
 
     // Wait for background task to complete
     match tokio::time::timeout(Duration::from_secs(10), sensor_task_handle).await {
-        Ok(Ok(())) => info!("Background task stopped successfully"),
-        Ok(Err(e)) => error!("Background task error: {:?}", e),
-        Err(_) => error!("Background task did not stop within timeout"),
+        Ok(Ok(())) => info!(
+            operation = "background_task_stopped",
+            "Background task stopped successfully"
+        ),
+        Ok(Err(e)) => error!(
+            error = ?e,
+            operation = "background_task_error",
+            "Background task encountered an error during shutdown"
+        ),
+        Err(_) => error!(
+            operation = "background_task_timeout",
+            timeout_seconds = 10,
+            "Background task did not stop within timeout"
+        ),
     }
 
-    info!("Application shutdown complete");
+    info!(
+        operation = "application_shutdown_complete",
+        "Application shutdown complete"
+    );
     Ok(())
 }
-
-
-
 
 
 
