@@ -1,13 +1,7 @@
 use actix_web::{test, App, web};
 use esms_backend::lib::{
-    simulate_sensor_data,
-    calculate_stress_index,
-    stress_level,
-    AppState,
-    AppConfig,
-    EnhancedSensorData,
-    get_realtime,
-    health,
+    simulate_sensor_data, calculate_stress_index, stress_level,
+    AppState, AppConfig, EnhancedSensorData, get_realtime, health,
 };
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -25,7 +19,7 @@ async fn test_health_endpoint() {
 async fn test_realtime_endpoint_empty() {
     let memory: Arc<Mutex<VecDeque<EnhancedSensorData>>> = Arc::new(Mutex::new(VecDeque::new()));
 
-    let app_state = web::Data::new(AppState {
+    let state = web::Data::new(AppState {
         memory: memory.clone(),
         config: AppConfig {
             redis_url: "".to_string(),
@@ -36,12 +30,12 @@ async fn test_realtime_endpoint_empty() {
             serial_tcp_port: 5555,
         },
         redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/").unwrap())),
-        mysql: mysql_async::Pool::new("mysql://root:root@localhost:3306/test"), // removed .unwrap()
+        mysql: mysql_async::Pool::new("mysql://root:root@localhost:3306/test"),
     });
 
     let app = test::init_service(
         App::new()
-            .app_data(app_state.clone())
+            .app_data(state.clone())
             .route("/api/realtime", web::get().to(get_realtime))
     ).await;
 

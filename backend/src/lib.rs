@@ -1,11 +1,17 @@
+use actix_web::{web, HttpResponse, Result};
 use chrono::Utc;
+use mysql_async::Pool;
 use rand::Rng;
+use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
+use std::{collections::VecDeque, sync::Arc};
+use tokio::sync::Mutex;
 use validator::Validate;
 
-/// ======================================================
-/// Models
-/// ======================================================
+// ======================================================
+// Models
+// ======================================================
+
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct SensorData {
     #[validate(range(min = 0.0, max = 60.0))]
@@ -32,14 +38,36 @@ pub struct EnhancedSensorData {
     pub stress_level: String,
 }
 
-/// ======================================================
-/// Business Logic
-/// ======================================================
+// ======================================================
+// App State
+// ======================================================
+
+pub struct AppConfig {
+    pub redis_url: String,
+    pub mysql_url: String,
+    pub bind_addr: String,
+    pub use_serial: bool,
+    pub serial_tcp_host: String,
+    pub serial_tcp_port: u16,
+}
+
+pub struct AppState {
+    pub redis: Arc<Mutex<redis::Client>>,
+    pub mysql: Pool,
+    pub memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>,
+    pub config: AppConfig,
+}
+
+// ======================================================
+// Business Logic
+// ======================================================
+
 pub fn calculate_stress_index(data: &SensorData) -> f64 {
     let score = (data.heart_rate - 60.0) / 100.0 * 0.5
         + (data.temperature / 50.0) * 0.2
         + (data.humidity / 100.0) * 0.2
         + (data.noise / 100.0) * 0.1;
+
     score.clamp(0.0, 1.0)
 }
 
@@ -52,9 +80,10 @@ pub fn stress_level(score: f64) -> String {
     .to_string()
 }
 
-/// ======================================================
-/// Sensor Simulation
-/// ======================================================
+// ======================================================
+// Simulation
+// ======================================================
+
 pub fn simulate_sensor_data() -> SensorData {
     let mut rng = rand::thread_rng();
     SensorData {
@@ -65,4 +94,21 @@ pub fn simulate_sensor_data() -> SensorData {
         motion: rng.gen_bool(0.3),
         timestamp: Utc::now().to_rfc3339(),
     }
+}
+
+// ======================================================
+// API functions
+// ======================================================
+
+pub async fn health() -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "status": "healthy",
+        "timestamp": Utc::now()
+    })))
+}
+
+pub async fn get_realtime(state: web::Data<AppState>) -> Result<HttpResponse> {
+    let mem: std::sync::MutexGuard<VecDeque<EnhancedSensorData>> = state.memory.lock().await;
+    let data: Vec<EnhancedSensorData> = mem.iter().rev().take(60).cloned().collect();
+    Ok(HttpResponse::Ok().json(data))
 }
