@@ -1077,6 +1077,9 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
 
+      - name: Backend cargo check
+        working-directory: backend
+        run: cargo check
 
       - name: Validate docker-compose file
         run: docker compose config
