@@ -155,6 +155,10 @@ Health check endpoint
   "timestamp": "2026-01-24T10:00:00Z"
 }
 ```
+## Local Setup
+1. Copy `.env.example` to `.env`
+2. Add your credentials in `.env`
+3. Run `docker compose up --build`
 
 ### **GET /api/realtime**
 Returns last 60 seconds of data from Redis
