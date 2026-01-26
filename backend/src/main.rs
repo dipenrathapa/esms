@@ -1,4 +1,4 @@
-use crate::lib::{
+use esms_backend::{
     calculate_stress_index, stress_level, simulate_sensor_data, SensorData, EnhancedSensorData,
     AppState, AppConfig, get_realtime, health,
 };
