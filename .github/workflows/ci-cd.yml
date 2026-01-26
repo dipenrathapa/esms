@@ -78,6 +78,10 @@ jobs:
         push: false
         tags: esms-frontend:test
 
+    - name: Prepare env file for CI
+      run: cp .env.example .env
+
+
     - name: Start services with Docker Compose
       run: |
         docker compose -f docker-compose.yml up -d
