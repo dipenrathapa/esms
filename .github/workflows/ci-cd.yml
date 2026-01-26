@@ -127,6 +127,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Create .env for validation
+      run: cp .env.example .env
+
     - name: Verify devcontainer configuration
       run: |
         if [ -f .devcontainer/devcontainer.json ]; then
