@@ -1,10 +1,10 @@
-use actix_web::{web, HttpResponse, Result};
 use chrono::Utc;
-use mysql_async::Pool;
+use mysql_async::{Pool, prelude::Queryable};
 use rand::Rng;
-use redis::AsyncCommands;
+use redis::Client;
 use serde::{Deserialize, Serialize};
-use std::{collections::VecDeque, sync::Arc};
+use std::collections::VecDeque;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 use validator::Validate;
 
@@ -39,9 +39,10 @@ pub struct EnhancedSensorData {
 }
 
 // ======================================================
-// App State
+// App State & Config
 // ======================================================
 
+#[derive(Clone)]
 pub struct AppConfig {
     pub redis_url: String,
     pub mysql_url: String,
@@ -52,7 +53,7 @@ pub struct AppConfig {
 }
 
 pub struct AppState {
-    pub redis: Arc<Mutex<redis::Client>>,
+    pub redis: Arc<Mutex<Client>>,
     pub mysql: Pool,
     pub memory: Arc<Mutex<VecDeque<EnhancedSensorData>>>,
     pub config: AppConfig,
@@ -81,7 +82,7 @@ pub fn stress_level(score: f64) -> String {
 }
 
 // ======================================================
-// Simulation
+// Sensor Simulation
 // ======================================================
 
 pub fn simulate_sensor_data() -> SensorData {
@@ -97,18 +98,12 @@ pub fn simulate_sensor_data() -> SensorData {
 }
 
 // ======================================================
-// API functions
+// Helper for accessing in-memory data
 // ======================================================
 
-pub async fn health() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "status": "healthy",
-        "timestamp": Utc::now()
-    })))
-}
-
-pub async fn get_realtime(state: web::Data<AppState>) -> Result<HttpResponse> {
-    let mem: std::sync::MutexGuard<VecDeque<EnhancedSensorData>> = state.memory.lock().await;
-    let data: Vec<EnhancedSensorData> = mem.iter().rev().take(60).cloned().collect();
-    Ok(HttpResponse::Ok().json(data))
+pub async fn get_latest_memory(
+    state: &AppState,
+) -> Vec<EnhancedSensorData> {
+    let mem = state.memory.lock().await; // use tokio::sync::MutexGuard
+    mem.iter().rev().take(60).cloned().collect()
 }
