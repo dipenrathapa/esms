@@ -98,12 +98,13 @@ pub fn simulate_sensor_data() -> SensorData {
 }
 
 // ======================================================
-// Helper for accessing in-memory data
+// Helper for accessing in-memory data safely
 // ======================================================
 
 pub async fn get_latest_memory(
     state: &AppState,
 ) -> Vec<EnhancedSensorData> {
-    let mem = state.memory.lock().await; // use tokio::sync::MutexGuard
-    mem.iter().rev().take(60).cloned().collect()
+    // Correct: uses tokio::sync::Mutex
+    let mem_guard = state.memory.lock().await;
+    mem_guard.iter().rev().take(60).cloned().collect()
 }
