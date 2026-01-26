@@ -1049,6 +1049,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -1063,6 +1065,9 @@ jobs:
           USE_SERIAL=false
           RUST_LOG=info
           EOF
+
+      - name: Verify docker-compose config
+        run: docker compose config
 
       - name: Validate docker-compose file
         run: docker compose config
