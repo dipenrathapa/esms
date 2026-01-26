@@ -1,9 +1,11 @@
+use chrono::Utc;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use rand::Rng;
-use chrono::Utc;
 
-/// Sensor data model
+/// ======================================================
+/// Models
+/// ======================================================
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct SensorData {
     #[validate(range(min = 0.0, max = 60.0))]
@@ -22,7 +24,6 @@ pub struct SensorData {
     pub timestamp: String,
 }
 
-/// Enhanced sensor data with stress index/level
 #[derive(Debug, Clone, Serialize)]
 pub struct EnhancedSensorData {
     #[serde(flatten)]
@@ -31,17 +32,17 @@ pub struct EnhancedSensorData {
     pub stress_level: String,
 }
 
-/// Calculates stress index based on sensor data
+/// ======================================================
+/// Business Logic
+/// ======================================================
 pub fn calculate_stress_index(data: &SensorData) -> f64 {
     let score = (data.heart_rate - 60.0) / 100.0 * 0.5
         + (data.temperature / 50.0) * 0.2
         + (data.humidity / 100.0) * 0.2
         + (data.noise / 100.0) * 0.1;
-
     score.clamp(0.0, 1.0)
 }
 
-/// Converts stress index to stress level
 pub fn stress_level(score: f64) -> String {
     match score {
         x if x < 0.3 => "Low",
@@ -51,7 +52,9 @@ pub fn stress_level(score: f64) -> String {
     .to_string()
 }
 
-/// Simulates sensor data (used for fallback/testing)
+/// ======================================================
+/// Sensor Simulation
+/// ======================================================
 pub fn simulate_sensor_data() -> SensorData {
     let mut rng = rand::thread_rng();
     SensorData {
