@@ -2640,8 +2640,9 @@
 // }
 
 // v2
+
 #![allow(clippy::multiple_crate_versions)]
-use actix_cors::Cors;
+
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
 use chrono::Utc;
