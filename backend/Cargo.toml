@@ -40,4 +40,4 @@ actix-web-httpauth = "0.7"
 
 serialport = "4.8"
 
-
+url = "2.5"
