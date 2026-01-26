@@ -346,7 +346,7 @@ use tokio::{
     sync::Mutex,
     time::{interval, Duration},
 };
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 use tracing_subscriber::{fmt, EnvFilter};
 use validator::Validate;
 
@@ -392,7 +392,8 @@ impl AppConfig {
 // Error Handling
 // ======================================================
 
-#[derive(thiserror::Error, Debug)]
+#[allow(dead_code)]
+#[derive(Debug)] 
 enum ApiError {
     #[error("Internal server error")]
     Internal,
