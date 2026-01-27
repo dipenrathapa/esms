@@ -942,8 +942,10 @@ jobs:
           fi
         done
 
+
     - name: Validate Docker Compose
       run: |
+        cp .env.example .env
         docker compose -f docker-compose.yml config > /dev/null
         echo "✅ docker-compose.yml is valid"
 
