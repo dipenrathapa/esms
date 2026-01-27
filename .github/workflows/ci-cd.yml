@@ -691,7 +691,7 @@
 
 
 
-name: ESMS Production-Ready CI/CD Pipeline
+name: ESMS Production-Ready CI/CD Pipeline (Multi-Platform)
 
 on:
   push:
@@ -708,11 +708,14 @@ env:
 
 jobs:
   # ============================================================================
-  # JOB 1: Code Quality & Security Analysis
+  # JOB 1: Code Quality & Security Analysis (Multi-Platform)
   # ============================================================================
   code-quality:
     name: Code Quality & Static Analysis
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     
     steps:
     - name: Checkout code
@@ -724,10 +727,18 @@ jobs:
         toolchain: nightly
         components: rustfmt, clippy
 
-    - name: Install system dependencies
+    - name: Install system dependencies (Ubuntu)
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y pkg-config libudev-dev
+
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install pkg-config
+
+    # Windows doesn't need additional dependencies for basic Rust build
 
     - name: Cache cargo registry
       uses: actions/cache@v4
@@ -748,13 +759,10 @@ jobs:
     - name: Run Clippy (strict mode)
       working-directory: ./backend
       run: |
-        cargo clippy --all-targets --all-features -- \
-          -D warnings \
-          -D clippy::all \
-          -D clippy::pedantic \
-          -W clippy::cargo
+        cargo clippy --all-targets --all-features -- -D warnings -D clippy::all -D clippy::pedantic -W clippy::cargo
 
-    - name: Detect unsafe code
+    - name: Detect unsafe code (Unix)
+      if: runner.os != 'Windows'
       working-directory: ./backend
       run: |
         echo "Scanning for unsafe code blocks..."
@@ -765,12 +773,29 @@ jobs:
           echo "✅ No unsafe code detected"
         fi
 
+    - name: Detect unsafe code (Windows)
+      if: runner.os == 'Windows'
+      working-directory: ./backend
+      shell: pwsh
+      run: |
+        Write-Host "Scanning for unsafe code blocks..."
+        $unsafeFound = Select-String -Path "src\**\*.rs" -Pattern "unsafe" -Recurse
+        if ($unsafeFound) {
+          Write-Host "⚠️ WARNING: unsafe code detected"
+          $unsafeFound | ForEach-Object { Write-Host "$($_.Path):$($_.LineNumber): $($_.Line)" }
+        } else {
+          Write-Host "✅ No unsafe code detected"
+        }
+
   # ============================================================================
-  # JOB 2: Comprehensive Testing with Coverage
+  # JOB 2: Comprehensive Testing with Coverage (Multi-Platform)
   # ============================================================================
   test-backend:
     name: Test Rust Backend with Coverage
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     needs: code-quality
 
     steps:
@@ -782,14 +807,26 @@ jobs:
       with:
         toolchain: nightly
 
-    - name: Install system dependencies
+    - name: Install system dependencies (Ubuntu)
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y pkg-config libudev-dev
 
-    - name: Install cargo-tarpaulin for coverage
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install pkg-config
+
+    - name: Install cargo-tarpaulin for coverage (Linux only)
+      if: runner.os == 'Linux'
       run: |
         cargo install cargo-tarpaulin || echo "tarpaulin already installed"
+
+    - name: Install cargo-llvm-cov for coverage (Windows/macOS)
+      if: runner.os != 'Linux'
+      run: |
+        cargo install cargo-llvm-cov || echo "llvm-cov already installed"
 
     - name: Cache cargo dependencies
       uses: actions/cache@v4
@@ -809,7 +846,8 @@ jobs:
       working-directory: ./backend
       run: cargo build --verbose --all-features
 
-    - name: Run unit tests with coverage
+    - name: Run unit tests with coverage (Linux - tarpaulin)
+      if: runner.os == 'Linux'
       working-directory: ./backend
       run: |
         cargo tarpaulin --verbose --all-features --workspace \
@@ -817,42 +855,62 @@ jobs:
           --out Xml --out Json --out Html \
           --output-dir ../coverage/
 
-
-    - name: Generate test report
-      if: always()
+    - name: Run unit tests with coverage (Windows/macOS - llvm-cov)
+      if: runner.os != 'Linux'
+      working-directory: ./backend
       run: |
-        echo "# Test Coverage Report" > coverage-summary.md
+        mkdir -p ../coverage
+        cargo llvm-cov --all-features --workspace --html --output-dir ../coverage/
+
+    - name: Generate test report (Unix)
+      if: always() && runner.os != 'Windows'
+      run: |
+        echo "# Test Coverage Report (${{ matrix.os }})" > coverage-summary.md
         echo "" >> coverage-summary.md
-        if [ -f coverage/tarpaulin-report.json ]; then
+        if [ -f coverage/tarpaulin-report.json ] || [ -f coverage/html/index.html ]; then
           echo "**Coverage report generated**" >> coverage-summary.md
           echo "✅ Coverage report generated"
         else
           echo "Coverage data not available" >> coverage-summary.md
         fi
 
-
+    - name: Generate test report (Windows)
+      if: always() && runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        "# Test Coverage Report (${{ matrix.os }})" | Out-File -FilePath coverage-summary.md
+        "" | Out-File -FilePath coverage-summary.md -Append
+        if ((Test-Path "coverage/html/index.html")) {
+          "**Coverage report generated**" | Out-File -FilePath coverage-summary.md -Append
+          Write-Host "✅ Coverage report generated"
+        } else {
+          "Coverage data not available" | Out-File -FilePath coverage-summary.md -Append
+        }
 
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: coverage-reports
+        name: coverage-reports-${{ matrix.os }}
         path: |
           coverage/
           coverage-summary.md
 
     - name: Display test summary
       run: |
-        echo "✅ All unit tests passed"
+        echo "✅ All unit tests passed on ${{ matrix.os }}"
         echo "✅ Code coverage generated"
         echo "✅ Test reports available as artifacts"
 
   # ============================================================================
-  # JOB 3: Security Audit & Vulnerability Scanning
+  # JOB 3: Security Audit & Vulnerability Scanning (Multi-Platform)
   # ============================================================================
   security-audit:
     name: Security Audit & Dependency Check
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     
     steps:
     - name: Checkout code
@@ -878,10 +936,11 @@ jobs:
         cargo audit --deny warnings || echo "⚠️ Security vulnerabilities detected"
         cargo audit --json > ../security-audit.json || true
 
-    - name: Check for known vulnerabilities
+    - name: Check for known vulnerabilities (Unix)
+      if: runner.os != 'Windows'
       working-directory: ./backend
       run: |
-        echo "# Security Audit Report" > ../security-report.md
+        echo "# Security Audit Report (${{ matrix.os }})" > ../security-report.md
         echo "" >> ../security-report.md
         if cargo audit 2>&1 | grep -q "Vulnerabilities found"; then
           echo "❌ VULNERABILITIES FOUND" >> ../security-report.md
@@ -889,6 +948,21 @@ jobs:
         else
           echo "✅ No known vulnerabilities" >> ../security-report.md
         fi
+
+    - name: Check for known vulnerabilities (Windows)
+      if: runner.os == 'Windows'
+      working-directory: ./backend
+      shell: pwsh
+      run: |
+        "# Security Audit Report (${{ matrix.os }})" | Out-File -FilePath ../security-report.md
+        "" | Out-File -FilePath ../security-report.md -Append
+        $auditOutput = cargo audit 2>&1 | Out-String
+        if ($auditOutput -match "Vulnerabilities found") {
+          "❌ VULNERABILITIES FOUND" | Out-File -FilePath ../security-report.md -Append
+          $auditOutput | Out-File -FilePath ../security-report.md -Append
+        } else {
+          "✅ No known vulnerabilities" | Out-File -FilePath ../security-report.md -Append
+        }
 
     - name: Dependency tree analysis
       working-directory: ./backend
@@ -900,13 +974,13 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: security-reports
+        name: security-reports-${{ matrix.os }}
         path: |
           security-audit.json
           security-report.md
 
   # ============================================================================
-  # JOB 4: Build & Push Docker Images (with caching)
+  # JOB 4: Build & Push Docker Images (Linux only - Docker required)
   # ============================================================================
   build-images:
     name: Build Optimized Docker Images
@@ -987,7 +1061,7 @@ jobs:
         retention-days: 1
 
   # ============================================================================
-  # JOB 5: Integration Testing (Full Stack)
+  # JOB 5: Integration Testing (Full Stack - Linux only)
   # ============================================================================
   integration-tests:
     name: Integration Tests (Full Stack)
@@ -1142,7 +1216,7 @@ jobs:
       run: docker compose down -v
 
   # ============================================================================
-  # JOB 6: Performance & Load Testing
+  # JOB 6: Performance & Load Testing (Linux only - requires Docker)
   # ============================================================================
   performance-tests:
     name: Performance & Load Testing
@@ -1210,18 +1284,22 @@ jobs:
       run: docker compose down -v
 
   # ============================================================================
-  # JOB 7: Deployment Validation
+  # JOB 7: Deployment Validation (Multi-Platform)
   # ============================================================================
   deployment-validation:
     name: Deployment Configuration Validation
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     needs: integration-tests
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Validate environment template
+    - name: Validate environment template (Unix)
+      if: runner.os != 'Windows'
       run: |
         echo "Validating .env.example..."
         
@@ -1243,14 +1321,57 @@ jobs:
           fi
         done
 
+    - name: Validate environment template (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        Write-Host "Validating .env.example..."
+        
+        $requiredVars = @(
+          "REDIS_URL",
+          "MYSQL_DATABASE_URL",
+          "USE_SERIAL",
+          "SERIAL_TCP_HOST",
+          "SERIAL_TCP_PORT",
+          "BIND_ADDR"
+        )
+        
+        $content = Get-Content .env.example
+        $allPresent = $true
+        
+        foreach ($var in $requiredVars) {
+          if ($content -match "^$var=") {
+            Write-Host "✅ $var present"
+          } else {
+            Write-Host "❌ $var missing"
+            $allPresent = $false
+          }
+        }
+        
+        if (-not $allPresent) {
+          exit 1
+        }
 
-    - name: Validate Docker Compose
+    - name: Validate Docker Compose (Linux only)
+      if: runner.os == 'Linux'
       run: |
         cp .env.example .env
         docker compose -f docker-compose.yml config > /dev/null
         echo "✅ docker-compose.yml is valid"
 
-    - name: Validate devcontainer
+    - name: Validate Docker Compose config exists (macOS/Windows)
+      if: runner.os != 'Linux'
+      run: |
+        if [ -f docker-compose.yml ]; then
+          echo "✅ docker-compose.yml exists"
+        else
+          echo "❌ docker-compose.yml not found"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Validate devcontainer (Unix)
+      if: runner.os != 'Windows'
       run: |
         if [ -f .devcontainer/devcontainer.json ]; then
           echo "✅ devcontainer.json found"
@@ -1260,24 +1381,67 @@ jobs:
           echo "⚠️ devcontainer.json not found (optional)"
         fi
 
-    - name: Check for hardcoded secrets
+    - name: Validate devcontainer (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        if (Test-Path .devcontainer/devcontainer.json) {
+          Write-Host "✅ devcontainer.json found"
+          try {
+            Get-Content .devcontainer/devcontainer.json | ConvertFrom-Json | Out-Null
+            Write-Host "✅ devcontainer.json is valid JSON"
+          } catch {
+            Write-Host "❌ devcontainer.json is invalid JSON"
+            exit 1
+          }
+        } else {
+          Write-Host "⚠️ devcontainer.json not found (optional)"
+        }
+
+    - name: Check for hardcoded secrets (Unix)
+      if: runner.os != 'Windows'
       run: |
         echo "Scanning for hardcoded secrets..."
         
         # Scan backend code
-        if grep -r -i "password\s*=\s*[\"']" backend/src/ --exclude-dir=target; then
+        if grep -r -i "password\s*=\s*[\"']" backend/src/ --exclude-dir=target 2>/dev/null; then
           echo "❌ Potential hardcoded passwords found"
           exit 1
         fi
         
-        if grep -r -i "secret\s*=\s*[\"']" backend/src/ --exclude-dir=target; then
+        if grep -r -i "secret\s*=\s*[\"']" backend/src/ --exclude-dir=target 2>/dev/null; then
           echo "❌ Potential hardcoded secrets found"
           exit 1
         fi
         
         echo "✅ No hardcoded secrets detected"
 
-    - name: Validate Dockerfile best practices
+    - name: Check for hardcoded secrets (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        Write-Host "Scanning for hardcoded secrets..."
+        
+        $passwordPattern = 'password\s*=\s*["\']'
+        $secretPattern = 'secret\s*=\s*["\']'
+        
+        $passwords = Select-String -Path "backend\src\**\*.rs" -Pattern $passwordPattern -Recurse 2>$null
+        $secrets = Select-String -Path "backend\src\**\*.rs" -Pattern $secretPattern -Recurse 2>$null
+        
+        if ($passwords) {
+          Write-Host "❌ Potential hardcoded passwords found"
+          exit 1
+        }
+        
+        if ($secrets) {
+          Write-Host "❌ Potential hardcoded secrets found"
+          exit 1
+        }
+        
+        Write-Host "✅ No hardcoded secrets detected"
+
+    - name: Validate Dockerfile best practices (Unix)
+      if: runner.os != 'Windows'
       run: |
         echo "Checking Dockerfile best practices..."
         
@@ -1295,7 +1459,25 @@ jobs:
           echo "⚠️ No EXPOSE directive found"
         fi
 
-    
+    - name: Validate Dockerfile best practices (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        Write-Host "Checking Dockerfile best practices..."
+        
+        $dockerfileContent = Get-Content backend/Dockerfile -Raw
+        
+        if ($dockerfileContent -match "FROM.*as builder") {
+          Write-Host "✅ Multi-stage build detected"
+        } else {
+          Write-Host "⚠️ Consider multi-stage builds for smaller images"
+        }
+        
+        if ($dockerfileContent -match "EXPOSE") {
+          Write-Host "✅ Port exposed in Dockerfile"
+        } else {
+          Write-Host "⚠️ No EXPOSE directive found"
+        }
 
   # ============================================================================
   # JOB 8: Final Summary & Artifact Collection
@@ -1312,7 +1494,7 @@ jobs:
 
     - name: Generate pipeline summary
       run: |
-        echo "# 🎉 ESMS CI/CD Pipeline - Execution Summary" > PIPELINE_SUMMARY.md
+        echo "# 🎉 ESMS CI/CD Pipeline - Execution Summary (Multi-Platform)" > PIPELINE_SUMMARY.md
         echo "" >> PIPELINE_SUMMARY.md
         echo "**Execution Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> PIPELINE_SUMMARY.md
         echo "**Branch:** ${{ github.ref_name }}" >> PIPELINE_SUMMARY.md
@@ -1320,29 +1502,35 @@ jobs:
         echo "" >> PIPELINE_SUMMARY.md
         echo "## ✅ Completed Jobs" >> PIPELINE_SUMMARY.md
         echo "" >> PIPELINE_SUMMARY.md
-        echo "- [x] Code Quality & Static Analysis" >> PIPELINE_SUMMARY.md
-        echo "- [x] Unit Testing with Coverage" >> PIPELINE_SUMMARY.md
-        echo "- [x] Security Audit & Vulnerability Scan" >> PIPELINE_SUMMARY.md
-        echo "- [x] Docker Image Building (with caching)" >> PIPELINE_SUMMARY.md
-        echo "- [x] Integration Testing (Full Stack)" >> PIPELINE_SUMMARY.md
-        echo "- [x] Performance & Load Testing" >> PIPELINE_SUMMARY.md
-        echo "- [x] Deployment Configuration Validation" >> PIPELINE_SUMMARY.md
+        echo "- [x] Code Quality & Static Analysis (Ubuntu, Windows, macOS)" >> PIPELINE_SUMMARY.md
+        echo "- [x] Unit Testing with Coverage (Ubuntu, Windows, macOS)" >> PIPELINE_SUMMARY.md
+        echo "- [x] Security Audit & Vulnerability Scan (Ubuntu, Windows, macOS)" >> PIPELINE_SUMMARY.md
+        echo "- [x] Docker Image Building (with caching) - Linux" >> PIPELINE_SUMMARY.md
+        echo "- [x] Integration Testing (Full Stack) - Linux" >> PIPELINE_SUMMARY.md
+        echo "- [x] Performance & Load Testing - Linux" >> PIPELINE_SUMMARY.md
+        echo "- [x] Deployment Configuration Validation (Ubuntu, Windows, macOS)" >> PIPELINE_SUMMARY.md
         echo "" >> PIPELINE_SUMMARY.md
         echo "## 📊 Artifacts Generated" >> PIPELINE_SUMMARY.md
         echo "" >> PIPELINE_SUMMARY.md
-        echo "- Coverage Reports (HTML + JSON + XML)" >> PIPELINE_SUMMARY.md
-        echo "- Security Audit Reports" >> PIPELINE_SUMMARY.md
-        echo "- Performance Test Results" >> PIPELINE_SUMMARY.md
-        echo "- Docker Images (cached)" >> PIPELINE_SUMMARY.md
+        echo "- Coverage Reports (HTML + JSON + XML) - per OS" >> PIPELINE_SUMMARY.md
+        echo "- Security Audit Reports - per OS" >> PIPELINE_SUMMARY.md
+        echo "- Performance Test Results - Linux" >> PIPELINE_SUMMARY.md
+        echo "- Docker Images (cached) - Linux" >> PIPELINE_SUMMARY.md
         echo "" >> PIPELINE_SUMMARY.md
         echo "## 🏆 Quality Gates" >> PIPELINE_SUMMARY.md
         echo "" >> PIPELINE_SUMMARY.md
-        echo "- ✅ All unit tests passed" >> PIPELINE_SUMMARY.md
-        echo "- ✅ Code quality checks passed (Clippy strict mode)" >> PIPELINE_SUMMARY.md
-        echo "- ✅ Security audit completed" >> PIPELINE_SUMMARY.md
-        echo "- ✅ Integration tests passed" >> PIPELINE_SUMMARY.md
-        echo "- ✅ Performance benchmarks collected" >> PIPELINE_SUMMARY.md
-        echo "- ✅ Deployment validation successful" >> PIPELINE_SUMMARY.md
+        echo "- ✅ All unit tests passed (Ubuntu, Windows, macOS)" >> PIPELINE_SUMMARY.md
+        echo "- ✅ Code quality checks passed - Clippy strict mode (all platforms)" >> PIPELINE_SUMMARY.md
+        echo "- ✅ Security audit completed (all platforms)" >> PIPELINE_SUMMARY.md
+        echo "- ✅ Integration tests passed (Linux)" >> PIPELINE_SUMMARY.md
+        echo "- ✅ Performance benchmarks collected (Linux)" >> PIPELINE_SUMMARY.md
+        echo "- ✅ Deployment validation successful (all platforms)" >> PIPELINE_SUMMARY.md
+        echo "" >> PIPELINE_SUMMARY.md
+        echo "## 🖥️ Platform Support" >> PIPELINE_SUMMARY.md
+        echo "" >> PIPELINE_SUMMARY.md
+        echo "- ✅ Ubuntu (Linux) - Full pipeline including Docker" >> PIPELINE_SUMMARY.md
+        echo "- ✅ Windows - Build, test, security, validation" >> PIPELINE_SUMMARY.md
+        echo "- ✅ macOS - Build, test, security, validation" >> PIPELINE_SUMMARY.md
         echo "" >> PIPELINE_SUMMARY.md
         echo "---" >> PIPELINE_SUMMARY.md
         echo "**Status:** 🟢 Pipeline Completed Successfully" >> PIPELINE_SUMMARY.md
@@ -1369,7 +1557,6 @@ jobs:
             repo: context.repo.repo,
             body: summary
           });
-
 
 
 
