@@ -1,4 +1,4 @@
-use esms_backend::{store_to_mysql, store_to_redis, EnhancedSensorData, SensorData, RetryConfig};
+use esms_backend::{store_to_mysql, store_to_redis, EnhancedSensorData, RetryConfig, SensorData};
 use mysql_async::Pool;
 use redis::Client;
 use std::sync::Arc;

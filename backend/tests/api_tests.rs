@@ -1,15 +1,16 @@
 use actix_web::{test, App};
-use esms_backend::{AppState, get_realtime, health}; // adjust your crate name
+use esms_backend::{get_realtime, health, AppState}; // adjust your crate name
+use mysql_async::Pool;
+use redis::Client as RedisClient;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use redis::Client as RedisClient;
-use mysql_async::Pool;
 use tokio_util::sync::CancellationToken;
 
 #[actix_rt::test]
 async fn test_health_endpoint() {
-    let app = test::init_service(App::new().route("/health", actix_web::web::get().to(health))).await;
+    let app =
+        test::init_service(App::new().route("/health", actix_web::web::get().to(health))).await;
     let req = test::TestRequest::get().uri("/health").to_request();
     let resp = test::call_service(&app, req).await;
     assert!(resp.status().is_success());
