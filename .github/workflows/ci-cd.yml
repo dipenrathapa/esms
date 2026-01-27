@@ -718,8 +718,14 @@ jobs:
       run: |
         cp .env.example .env
         # Inject GitHub Secrets for CI testing
-        echo "REDIS_URL=${{ secrets.REDIS_URL || 'redis://redis:6379' }}" >> .env
-        echo "MYSQL_DATABASE_URL=${{ secrets.MYSQL_URL || 'mysql://esms_user:esms_pass@mysql:3306/esms_db' }}" >> .env
+        echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
+        echo "MYSQL_DATABASE_URL=${{ secrets.MYSQL_DATABASE_URL }}" >> .env
+        echo "USE_SERIAL=${{ secrets.USE_SERIAL }}" >> .env
+        echo "SERIAL_PORT=${{ secrets.SERIAL_PORT }}" >> .env
+        echo "SERIAL_TCP_HOST=${{ secrets.SERIAL_TCP_HOST }}" >> .env
+        echo "SERIAL_TCP_PORT=${{ secrets.SERIAL_TCP_PORT }}" >> .env
+        echo "RUST_LOG=${{ secrets.RUST_LOG }}" >> .env
+        echo "BIND_ADDR=${{ secrets.BIND_ADDR }}" >> .env
 
     - name: Start services
       run: |
@@ -993,6 +999,8 @@ jobs:
         else
           echo "⚠️ No EXPOSE directive found"
         fi
+
+    
 
   # ============================================================================
   # JOB 8: Final Summary & Artifact Collection
