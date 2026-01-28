@@ -50,6 +50,12 @@ ESMS is a full-stack IoT application that:
 
 ---
 
+## 🎥 Project Demonstration Video
+
+[![ESMS Project Demo](videos/1000012672.jpg)](videos/esms-demo.mp4)
+
+▶ Click the image to watch the full system demonstration.
+
 ## 📊 Stress Index Calculation
 
 The system calculates environmental stress using a weighted formula:
