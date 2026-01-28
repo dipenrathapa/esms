@@ -15,6 +15,14 @@ ESMS is a full-stack IoT application that:
 
 ---
 
+## 🔌 Hardware Setup (Arduino)
+
+![Arduino Uno Sensor Setup](images/1000012556.jpg)
+
+## 🖥️ Frontend Dashboard Preview
+
+![ESMS Frontend Dashboard](images/1000012555.png)
+
 ## 🏗️ System Architecture
 
 ```
