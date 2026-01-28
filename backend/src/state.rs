@@ -1,4 +1,3 @@
-// src/state.rs
 use mysql_async::Pool;
 use std::{collections::VecDeque, sync::Arc};
 use tokio::sync::Mutex;

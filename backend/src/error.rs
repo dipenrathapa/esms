@@ -1,4 +1,3 @@
-// src/error.rs
 use actix_web::HttpResponse;
 
 #[derive(thiserror::Error, Debug)]

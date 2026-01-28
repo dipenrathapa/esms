@@ -1,4 +1,3 @@
-// src/config.rs
 use std::{env, net::SocketAddr};
 use tracing::info;
 use url::Url;

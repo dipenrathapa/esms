@@ -1,4 +1,3 @@
-// src/background.rs
 use actix_web::web;
 use tokio::time::{interval, Duration};
 use tokio_util::sync::CancellationToken;

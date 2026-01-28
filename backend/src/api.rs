@@ -1,4 +1,3 @@
-// src/api.rs
 use actix_web::{web, HttpResponse, Result};
 use chrono::Utc;
 

@@ -1,4 +1,3 @@
-// src/business.rs
 use crate::models::SensorData;
 
 pub fn calculate_stress_index(data: &SensorData) -> f64 {
