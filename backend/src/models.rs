@@ -13,7 +13,6 @@ pub struct SensorData {
     // pub heart_rate: f64,
     // pub motion: bool,
     // pub timestamp: String,
-
     #[validate(range(min = 0.0, max = 1023.0))]
     pub temperature: f64,
     #[validate(range(min = 0.0, max = 1023.0))]
