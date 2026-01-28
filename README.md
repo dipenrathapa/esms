@@ -21,7 +21,7 @@ ESMS is a full-stack IoT application that:
 
 ## 🖥️ Frontend Dashboard Preview
 
-![ESMS Frontend Dashboard](images/1000012555.png)
+![ESMS Frontend Dashboard](images/1000012555.jpg)
 
 ## 🏗️ System Architecture
 
