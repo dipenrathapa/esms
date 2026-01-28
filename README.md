@@ -437,9 +437,9 @@ This project is created for educational purposes as part of the Innovation and C
 
 ## 👥 Contributors
 
-- Your Name - Backend & Integration
-- Your Name - Frontend & Visualization
-- Your Name - DevOps & CI/CD
+- Dipendra Thapa - Backend & Integration
+- Pritam Parmanik - Frontend & Visualization
+- Shokhjahon Kodirov - Hardware Integration & Arduino Programming 
 
 ---
 
