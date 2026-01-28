@@ -129,6 +129,7 @@ All logs are output in **JSON format** with the following structure:
 }
 ```
 
+
 #### **sensor_task_process** (Error)
 ```json
 {

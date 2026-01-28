@@ -15,3 +15,6 @@ CREATE TABLE IF NOT EXISTS sensor_data (
     INDEX idx_timestamp (timestamp),
     INDEX idx_stress_level (stress_level)
 );
+
+
+

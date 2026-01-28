@@ -151,6 +151,7 @@ Health check endpoint
 }
 ```
 
+
 ### **GET /api/realtime**
 Returns last 60 seconds of data from Redis
 ```json
