@@ -44,6 +44,7 @@ impl AppConfig {
 }
 
 #[derive(thiserror::Error, Debug)]
+#[allow(clippy::enum_variant_names)]
 pub enum ConfigError {
     #[error("Invalid Redis URL: {0}")]
     InvalidRedisUrl(String),
