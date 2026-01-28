@@ -298,9 +298,21 @@ The GitHub Actions workflow (`.github/workflows/ci-cd.yml`) ensures:
 
 ```
 esms/
+├── Aurdino/
+│   ├── aurdinouno.ino
 ├── backend/
 │   ├── src/
 │   │   └── main.rs           # Rust backend
+│   │   └── api.rs
+│   │   └── background.rs
+│   │   └── business.rs
+│   │   └── config.rs
+│   │   └── error.rs
+│   │   └── models.rs
+│   │   └── retry.rs
+│   │   └── sensor.rs
+│   │   └── state.rs
+│   │   └── storage.rs  
 │   ├── Cargo.toml            # Dependencies
 │   └── Dockerfile            # Backend container
 ├── frontend/
