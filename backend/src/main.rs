@@ -703,8 +703,8 @@
 //                 })?;
 
 //             conn.exec_drop(
-//                 r"INSERT INTO sensor_data 
-//                    (temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp) 
+//                 r"INSERT INTO sensor_data
+//                    (temperature, humidity, noise, heart_rate, motion, stress_index, stress_level, timestamp)
 //                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 //                 (
 //                     payload.data.temperature,
@@ -1203,42 +1203,36 @@
 //     }
 // }
 
-
-
-
 // src/main.rs
 #![allow(clippy::multiple_crate_versions)]
 
+mod api;
+mod background;
+mod business;
 mod config;
 mod error;
 mod models;
-mod state;
-mod business;
-mod sensor;
-mod background;
-mod storage;
-mod api;
 mod retry;
+mod sensor;
+mod state;
+mod storage;
 
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use dotenv::dotenv;
 use mysql_async::{Opts, Pool};
+use std::collections::VecDeque;
 use std::sync::Arc;
-use tokio::{
-    sync::Mutex,
-    time::Duration,
-};
+use tokio::{sync::Mutex, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 use tracing_subscriber::{fmt, EnvFilter};
-use std::collections::VecDeque;
 
-use config::AppConfig;
-use state::AppState;
-use retry::RetryConfig;
-use api::{health, get_realtime};
+use api::{get_realtime, health};
 use background::sensor_task;
+use config::AppConfig;
+use retry::RetryConfig;
+use state::AppState;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
