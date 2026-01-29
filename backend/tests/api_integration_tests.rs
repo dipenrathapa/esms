@@ -67,7 +67,7 @@ fn create_test_app_state() -> web::Data<AppState> {
 }
 
 /// Helper to create App with all routes
-fn init_test_app(state: web::Data<AppState>) -> App::<web::Data<AppState>> {
+fn init_test_app(state: web::Data<AppState>) -> App<web::Data<AppState>> {
     App::new()
         .app_data(state)
         .route("/health", web::get().to(health))
@@ -86,7 +86,8 @@ mod health_tests {
 
     #[actix_web::test]
     async fn test_health_endpoint_returns_ok() {
-        let app = test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
+        let app =
+            test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
 
         let req = test::TestRequest::get().uri("/health").to_request();
         let resp: actix_web::dev::ServiceResponse = test::call_service(&app, req).await;
@@ -96,7 +97,8 @@ mod health_tests {
 
     #[actix_web::test]
     async fn test_health_endpoint_json_structure() {
-        let app = test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
+        let app =
+            test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
 
         let req = test::TestRequest::get().uri("/health").to_request();
         let resp: serde_json::Value = test::call_and_read_body_json(&app, req).await;
@@ -108,7 +110,8 @@ mod health_tests {
 
     #[actix_web::test]
     async fn test_health_endpoint_timestamp_format() {
-        let app = test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
+        let app =
+            test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
 
         let req = test::TestRequest::get().uri("/health").to_request();
         let resp: serde_json::Value = test::call_and_read_body_json(&app, req).await;
@@ -119,7 +122,8 @@ mod health_tests {
 
     #[actix_web::test]
     async fn test_health_endpoint_multiple_requests() {
-        let app = test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
+        let app =
+            test::init_service(App::<()>::new().route("/health", web::get().to(health))).await;
 
         for _ in 0..10 {
             let req = test::TestRequest::get().uri("/health").to_request();
@@ -521,7 +525,8 @@ mod integration_tests {
         let app = test::init_service(init_test_app(state.clone())).await;
 
         let health_req = test::TestRequest::get().uri("/health").to_request();
-        let health_resp: actix_web::dev::ServiceResponse = test::call_service(&app, health_req).await;
+        let health_resp: actix_web::dev::ServiceResponse =
+            test::call_service(&app, health_req).await;
         assert!(health_resp.status().is_success());
 
         let realtime_req = test::TestRequest::get().uri("/api/realtime").to_request();
