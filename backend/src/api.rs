@@ -249,7 +249,7 @@ pub async fn health(state: web::Data<AppState>) -> Result<HttpResponse> {
     // ---------- MySQL health ----------
     let mysql_status = match state.mysql.get_conn().await {
         Ok(mut conn) => match conn.query_drop("SELECT 1").await {
-            Ok(_) => "ok",
+            Ok(()) => "ok",
             Err(e) => {
                 warn!(
                     error = %e,
