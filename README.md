@@ -4,7 +4,7 @@ A cloud-deployable, real-time sensor analytics system demonstrating **Innovation
 
 ---
 
-## Project Contribution
+## 👥Project Contribution
 
 | Name | Contribution |
 |------|-------------|
