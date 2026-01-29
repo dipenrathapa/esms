@@ -16,7 +16,7 @@ fn bench_stress_index_calculation(c: &mut Criterion) {
     };
 
     group.bench_function("typical_values", |b| {
-        b.iter(|| calculate_stress_index(black_box(&typical_data)))
+        b.iter(|| calculate_stress_index(black_box(&typical_data)));
     });
 
     // Benchmark with minimum values
@@ -30,7 +30,7 @@ fn bench_stress_index_calculation(c: &mut Criterion) {
     };
 
     group.bench_function("minimum_values", |b| {
-        b.iter(|| calculate_stress_index(black_box(&min_data)))
+        b.iter(|| calculate_stress_index(black_box(&min_data)));
     });
 
     // Benchmark with maximum values
@@ -44,7 +44,7 @@ fn bench_stress_index_calculation(c: &mut Criterion) {
     };
 
     group.bench_function("maximum_values", |b| {
-        b.iter(|| calculate_stress_index(black_box(&max_data)))
+        b.iter(|| calculate_stress_index(black_box(&max_data)));
     });
 
     group.finish();
@@ -54,17 +54,15 @@ fn bench_stress_level_classification(c: &mut Criterion) {
     let mut group = c.benchmark_group("stress_level");
 
     group.bench_with_input(BenchmarkId::new("classify", "low"), &0.2, |b, &score| {
-        b.iter(|| stress_level(black_box(score)))
+        b.iter(|| stress_level(black_box(score)));
     });
 
-    group.bench_with_input(
-        BenchmarkId::new("classify", "moderate"),
-        &0.5,
-        |b, &score| b.iter(|| stress_level(black_box(score))),
-    );
+    group.bench_with_input(BenchmarkId::new("classify", "moderate"), &0.5, |b, &score| {
+        b.iter(|| stress_level(black_box(score)));
+    });
 
     group.bench_with_input(BenchmarkId::new("classify", "high"), &0.8, |b, &score| {
-        b.iter(|| stress_level(black_box(score)))
+        b.iter(|| stress_level(black_box(score)));
     });
 
     group.finish();
@@ -83,8 +81,8 @@ fn bench_combined_workflow(c: &mut Criterion) {
 
         b.iter(|| {
             let index = calculate_stress_index(black_box(&data));
-            stress_level(black_box(index))
-        })
+            stress_level(black_box(index));
+        });
     });
 }
 

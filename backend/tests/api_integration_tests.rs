@@ -33,7 +33,8 @@ fn create_mock_sensor_data(timestamp: &str) -> EnhancedSensorData {
     }
 }
 
-async fn create_test_app_state() -> web::Data<AppState> {
+/// Removed `async` because nothing is `.await`ed inside
+fn create_test_app_state() -> web::Data<AppState> {
     let config = AppConfig {
         redis_url: "redis://localhost:6379".to_string(),
         mysql_url: "mysql://root:password@localhost:3306/test_db".to_string(),
@@ -128,7 +129,7 @@ mod realtime_tests {
 
     #[actix_web::test]
     async fn test_realtime_returns_data() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())

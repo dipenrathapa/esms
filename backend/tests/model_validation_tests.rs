@@ -333,7 +333,6 @@ mod sensor_data_validation {
         let result = data.validate();
         assert!(result.is_err(), "Multiple invalid fields should fail");
 
-        // Borrow the error instead of moving it
         if let Err(ref e) = result {
             assert!(
                 e.field_errors().len() >= 4,
@@ -367,7 +366,12 @@ mod enhanced_sensor_data_tests {
             stress_level: "Moderate".to_string(),
         };
 
-        assert_eq!(enhanced.stress_index, 0.345);
+        // approximate float comparison
+        let epsilon = 1e-6;
+        assert!(
+            (enhanced.stress_index - 0.345).abs() < epsilon,
+            "Stress index should be approximately 0.345"
+        );
         assert_eq!(enhanced.stress_level, "Moderate");
     }
 }
