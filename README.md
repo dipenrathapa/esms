@@ -15,6 +15,21 @@ ESMS is a full-stack IoT application that:
 
 ---
 
+## 🖥️ Backend Development
+
+The backend of ESMS was fully implemented by **Dipendra Thapa**, covering fault-tolerant, secure, and real-time data processing features. Key contributions include:
+
+- **Data Processing & Stress Calculation:** Real-time sensor data ingestion, JSON parsing, and stress index computation.  
+- **Fault Tolerance:** Retry mechanisms with exponential backoff, in-memory buffering, asynchronous persistence, graceful shutdown, and Docker auto-restart.  
+- **Error Handling & Logging:** Centralized error.rs module, structured logging with `tracing`, automatic retries, and task-level survivability.  
+- **FHIR Compliance:** FHIR Observation endpoint exposing stress index in healthcare-standard format.  
+- **Security & Validation:** Parameterized MySQL queries to prevent SQL injection, partial input validation for sensor and FHIR data.  
+- **Deployment & CI/CD:** Dockerized backend container, orchestrated with docker-compose, automated deployment via GitHub Actions.  
+- **Configuration Management:** Dynamic environment-based config, secure secrets via GitHub Secrets, validation before startup, and simulated sensor fallback.  
+- **Testing:** Rust #[test] functions for stress calculation, sensor validation, and simulation edge cases.  
+
+Technologies used: **Rust, Actix-web, Tokio, MySQL, Redis, Docker, Docker Compose, GitHub Actions, FHIR, tracing**.
+
 ## 🔌 Hardware Setup (Arduino)
 
 ![Arduino Uno Sensor Setup](images/1000012556.jpg)
