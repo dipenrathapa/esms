@@ -47,4 +47,3 @@ pub struct EnhancedSensorData {
     pub stress_index: f64,
     pub stress_level: String,
 }
-
