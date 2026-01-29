@@ -529,6 +529,13 @@ This project is created for educational purposes as part of the Innovation and C
 
 ---
 
+| Name | Contribution |
+|------|-------------|
+| **Pritam Pramanik** | **Frontend & Data Visualization (ESMS Dashboard):** Designed and implemented a responsive, mobile-friendly frontend using HTML5, CSS3, Flexbox/Grid with theming and dark mode. Built real-time, interactive D3.js visualizations for multi-sensor data (temperature, humidity, noise, motion, heart rate), including time-series line and scatter charts with proper scaling, legends, gridlines, tooltips, and conditional formatting. Integrated frontend with backend via REST APIs (Fetch API), handling JSON data, asynchronous updates, auto-refresh polling, status indicators, and error states. Optimized UI performance for frequent sensor updates using efficient DOM manipulation and buffered data handling, with a strong focus on clarity, usability, and accurate interpretation of physiological data in environmental context. |
+| **Dipendra Thapa** | **Backend & Integration:** Implemented backend services for real-time data handling, including JSON parsing, Redis and MySQL integration, and Docker-based deployment. Designed fault-tolerant mechanisms such as retries, exponential backoff, in-memory buffering, asynchronous persistence, and graceful shutdown. Developed secure and robust APIs including FHIR Observation endpoints, parameterized queries, input validation, and SQL injection prevention. Managed configuration, environment variables, secrets, CI/CD integration, structured logging, automated deployment, sensor simulation, background task management, and system survivability features. |
+| **Shokhjahon Kodirov** | **Hardware Integration & Arduino Programming:** Developed Arduino-based firmware (C/C++) for real-time multi-sensor data acquisition using Arduino Uno. Integrated DHT11 temperature/humidity sensor, PIR motion sensor, analog sound sensor, and heart rate pulse sensor with signal processing, BPM calculation, peak detection, and threshold-based event detection. Implemented sensor calibration, data smoothing, validation, fault tolerance, and sampling interval management. Handled serial communication, JSON formatting, timing without RTC, and standardized data output for backend integration, with robust low-level hardware interfacing and system initialization. |
+
+
 ## 🙏 Acknowledgments
 
 - **INCO Course Team** for project requirements
