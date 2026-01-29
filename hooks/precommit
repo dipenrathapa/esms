@@ -1,0 +1,16 @@
+#!/bin/sh
+
+echo "Auto-formatting Rust code in backend..."
+cd backend || { echo "backend folder not found!"; exit 1; }
+
+# Format Rust code
+cargo fmt --all
+
+# Lint Rust code
+echo "Running clippy for linting..."
+cargo clippy --all-targets --all-features -- -D warnings
+
+if [ $? -ne 0 ]; then
+    echo "Error: Clippy found issues."
+    exit 1
+fi
