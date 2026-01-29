@@ -57,3 +57,8 @@ codegen-units = 1
 strip = true
 
 
+[lib]
+name = "esms_backend"
+path = "src/lib.rs"  # <-- this is mandatory for fuzzing
+
+

@@ -1,0 +1,28 @@
+[package]
+name = "esms-backend-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.esms-backend]
+path = ".."
+
+[[bin]]
+name = "fuzz_parse_sensor"
+path = "fuzz_targets/fuzz_parse_sensor.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_stress_index"   # <- unique name
+path = "fuzz_targets/fuzz_stress_index.rs"
+test = false
+doc = false
+bench = false
