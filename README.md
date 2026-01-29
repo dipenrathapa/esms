@@ -219,9 +219,11 @@ Health check endpoint
   "timestamp": "2026-01-24T10:00:00Z"
 }
 ```
-
-
-
+# Test Health endpoint(it taste sql and redis by pinging)
+Returns redis data
+```bash
+curl "curl http://localhost:8080/health"
+```
 
 
 ### **GET /api/realtime**
