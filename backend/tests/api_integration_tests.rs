@@ -187,7 +187,9 @@ mod fhir_tests {
         let state = create_test_app_state();
         let app = test::init_service(init_test_app(state)).await;
 
-        let req = test::TestRequest::get().uri("/api/fhir/observation").to_request();
+        let req = test::TestRequest::get()
+            .uri("/api/fhir/observation")
+            .to_request();
         let resp: serde_json::Value = test::call_and_read_body_json(&app, req).await;
 
         assert_eq!(resp["resourceType"], "Observation");
@@ -207,13 +209,24 @@ mod integration_tests {
         let state = create_test_app_state();
         let app = test::init_service(init_test_app(state)).await;
 
-        let health_resp = test::call_service(&app, test::TestRequest::get().uri("/health").to_request()).await;
+        let health_resp =
+            test::call_service(&app, test::TestRequest::get().uri("/health").to_request()).await;
         assert!(health_resp.status().is_success());
 
-        let realtime_resp: Vec<EnhancedSensorData> = test::call_and_read_body_json(&app, test::TestRequest::get().uri("/api/realtime").to_request()).await;
+        let realtime_resp: Vec<EnhancedSensorData> = test::call_and_read_body_json(
+            &app,
+            test::TestRequest::get().uri("/api/realtime").to_request(),
+        )
+        .await;
         assert!(!realtime_resp.is_empty());
 
-        let fhir_resp: serde_json::Value = test::call_and_read_body_json(&app, test::TestRequest::get().uri("/api/fhir/observation").to_request()).await;
+        let fhir_resp: serde_json::Value = test::call_and_read_body_json(
+            &app,
+            test::TestRequest::get()
+                .uri("/api/fhir/observation")
+                .to_request(),
+        )
+        .await;
         assert_eq!(fhir_resp["resourceType"], "Observation");
     }
 }
