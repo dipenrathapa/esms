@@ -57,9 +57,13 @@ fn bench_stress_level_classification(c: &mut Criterion) {
         b.iter(|| stress_level(black_box(score)));
     });
 
-    group.bench_with_input(BenchmarkId::new("classify", "moderate"), &0.5, |b, &score| {
-        b.iter(|| stress_level(black_box(score)));
-    });
+    group.bench_with_input(
+        BenchmarkId::new("classify", "moderate"),
+        &0.5,
+        |b, &score| {
+            b.iter(|| stress_level(black_box(score)));
+        },
+    );
 
     group.bench_with_input(BenchmarkId::new("classify", "high"), &0.8, |b, &score| {
         b.iter(|| stress_level(black_box(score)));
