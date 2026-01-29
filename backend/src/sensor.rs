@@ -275,6 +275,7 @@ use tracing::{error, info, warn};
 use crate::models::SensorData;
 
 /// Fuzz-friendly parser: converts raw bytes to SensorData
+#[must_use]
 #[allow(dead_code)]
 pub fn parse_sensor_data(input: &[u8]) -> Option<SensorData> {
     let s = std::str::from_utf8(input).ok()?;
@@ -282,6 +283,7 @@ pub fn parse_sensor_data(input: &[u8]) -> Option<SensorData> {
     Some(data)
 }
 
+#[must_use]
 pub fn simulate_sensor_data() -> SensorData {
     let mut rng = rand::thread_rng();
     SensorData {

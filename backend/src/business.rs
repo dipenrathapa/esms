@@ -1,5 +1,6 @@
 use crate::models::SensorData;
 
+#[must_use]
 pub fn calculate_stress_index(data: &SensorData) -> f64 {
     let score = (data.heart_rate - 60.0) / 100.0 * 0.5
         + (data.temperature / 50.0) * 0.2
@@ -8,6 +9,7 @@ pub fn calculate_stress_index(data: &SensorData) -> f64 {
     score.clamp(0.0, 1.0)
 }
 
+#[must_use]
 pub fn stress_level(score: f64) -> String {
     match score {
         x if x < 0.3 => "Low",
