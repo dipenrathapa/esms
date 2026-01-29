@@ -514,8 +514,8 @@ This project is created for educational purposes as part of the Innovation and C
 
 ## 👥 Contributors
 
-- Dipendra Thapa - Backend & Integration
 - Pritam Parmanik - Frontend & Visualization
+- Dipendra Thapa - Backend & Integration
 - Shokhjahon Kodirov - Hardware Integration & Arduino Programming 
 
 ---
