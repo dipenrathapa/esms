@@ -231,8 +231,6 @@
 //     Ok(HttpResponse::Ok().json(fhir_response))
 // }
 
-
-
 use actix_web::{web, HttpResponse, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use mysql_async::prelude::Queryable;
@@ -250,19 +248,17 @@ pub async fn health(state: web::Data<AppState>) -> Result<HttpResponse> {
 
     // ---------- MySQL health ----------
     let mysql_status = match state.mysql.get_conn().await {
-        Ok(mut conn) => {
-            match conn.query_drop("SELECT 1").await {
-                Ok(_) => "ok",
-                Err(e) => {
-                    warn!(
-                        error = %e,
-                        operation = "health_mysql_query",
-                        "MySQL reachable but query failed"
-                    );
-                    "degraded"
-                }
+        Ok(mut conn) => match conn.query_drop("SELECT 1").await {
+            Ok(_) => "ok",
+            Err(e) => {
+                warn!(
+                    error = %e,
+                    operation = "health_mysql_query",
+                    "MySQL reachable but query failed"
+                );
+                "degraded"
             }
-        }
+        },
         Err(e) => {
             warn!(
                 error = %e,
@@ -282,8 +278,7 @@ pub async fn health(state: web::Data<AppState>) -> Result<HttpResponse> {
         .await
     {
         Ok(mut conn) => {
-            let ping: redis::RedisResult<String> =
-                redis::cmd("PING").query_async(&mut conn).await;
+            let ping: redis::RedisResult<String> = redis::cmd("PING").query_async(&mut conn).await;
 
             match ping {
                 Ok(_) => "ok",
@@ -322,7 +317,6 @@ pub async fn health(state: web::Data<AppState>) -> Result<HttpResponse> {
         "timestamp": Utc::now()
     })))
 }
-
 
 pub async fn get_realtime(state: web::Data<AppState>) -> Result<HttpResponse> {
     let mem = state.memory.lock().await;
@@ -538,4 +532,3 @@ pub async fn get_fhir_observation(state: web::Data<AppState>) -> Result<HttpResp
 
     Ok(HttpResponse::Ok().json(fhir_response))
 }
-
