@@ -188,7 +188,17 @@ Returns last 60 seconds of data from Redis
 ]
 ```
 
+
+# Test Redis endpoint
+Returns redis data
+```bash
+curl "curl http://localhost:8080/api/redis"
+```
+
+
 ### **GET /api/history?start=&end=**
+
+# Test historical data
 Returns historical data from MySQL
 ```bash
 curl "http://localhost:8080/api/history?start=2026-01-24T09:00:00Z&end=2026-01-24T10:00:00Z"
@@ -215,7 +225,14 @@ Returns latest data in FHIR-compatible format
 }
 ```
 
+
 ---
+# Test FHIR endpoint
+Returns fhir observation data from MySQL
+```bash
+curl http://localhost:8080/api/fhir/observation
+```
+
 
 ## 📈 Frontend Dashboard Components
 
