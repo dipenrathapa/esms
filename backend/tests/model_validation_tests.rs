@@ -141,10 +141,7 @@ mod sensor_data_validation {
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
 
-        assert!(
-            data.validate().is_ok(),
-            "Humidity at 0.0 should be valid"
-        );
+        assert!(data.validate().is_ok(), "Humidity at 0.0 should be valid");
     }
 
     #[test]
@@ -158,10 +155,7 @@ mod sensor_data_validation {
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };
 
-        assert!(
-            data.validate().is_ok(),
-            "Humidity at 100.0 should be valid"
-        );
+        assert!(data.validate().is_ok(), "Humidity at 100.0 should be valid");
     }
 
     // Noise validation tests
@@ -404,10 +398,10 @@ mod sensor_data_validation {
     #[test]
     fn test_multiple_validation_errors() {
         let data = SensorData {
-            temperature: -10.0,  // Invalid
-            humidity: 150.0,     // Invalid
-            noise: 200.0,        // Invalid
-            heart_rate: 20.0,    // Invalid
+            temperature: -10.0, // Invalid
+            humidity: 150.0,    // Invalid
+            noise: 200.0,       // Invalid
+            heart_rate: 20.0,   // Invalid
             motion: false,
             timestamp: "2024-01-01T00:00:00Z".to_string(),
         };

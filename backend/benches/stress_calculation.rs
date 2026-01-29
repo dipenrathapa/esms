@@ -1,10 +1,10 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use esms_backend::business::{calculate_stress_index, stress_level};
 use esms_backend::models::SensorData;
 
 fn bench_stress_index_calculation(c: &mut Criterion) {
     let mut group = c.benchmark_group("stress_index");
-    
+
     // Benchmark with typical values
     let typical_data = SensorData {
         temperature: 25.0,
@@ -57,9 +57,11 @@ fn bench_stress_level_classification(c: &mut Criterion) {
         b.iter(|| stress_level(black_box(score)))
     });
 
-    group.bench_with_input(BenchmarkId::new("classify", "moderate"), &0.5, |b, &score| {
-        b.iter(|| stress_level(black_box(score)))
-    });
+    group.bench_with_input(
+        BenchmarkId::new("classify", "moderate"),
+        &0.5,
+        |b, &score| b.iter(|| stress_level(black_box(score))),
+    );
 
     group.bench_with_input(BenchmarkId::new("classify", "high"), &0.8, |b, &score| {
         b.iter(|| stress_level(black_box(score)))
