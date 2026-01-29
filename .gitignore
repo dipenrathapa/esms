@@ -24,3 +24,5 @@ Thumbs.db
 # Environment
 .env
 *.env
+videos/*.mp4
+*.mp4
