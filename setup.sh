@@ -7,6 +7,7 @@ echo "Starting ESMS setup..."
 
 # 0. Create .env if missing
 
+
 ENV_FILE="./backend/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
