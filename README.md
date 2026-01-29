@@ -52,9 +52,9 @@ ESMS is a full-stack IoT application that:
 
 ## 🎥 Project Demonstration Video
 
-[![ESMS Project Demo](videos/1000012672.jpg)](videos/esms-demo.mp4)
+[▶ Watch ESMS System Demonstration](https://www.youtube.com/watch?v=32hFvySmPG8)
 
-▶ Click the image to watch the full system demonstration.
+
 
 ## 📊 Stress Index Calculation
 
