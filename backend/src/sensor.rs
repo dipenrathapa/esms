@@ -275,6 +275,7 @@ use tracing::{error, info, warn};
 use crate::models::SensorData;
 
 /// Fuzz-friendly parser: converts raw bytes to SensorData
+#[allow(dead_code)]
 pub fn parse_sensor_data(input: &[u8]) -> Option<SensorData> {
     let s = std::str::from_utf8(input).ok()?;
     let data: SensorData = serde_json::from_str(s).ok()?;

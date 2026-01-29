@@ -343,17 +343,36 @@ jobs:
           done
         '
 
+    # - name: Test health endpoint
+    #   run: |
+    #     response=$(curl -s http://localhost:8080/health)
+    #     echo "Health response: $response"
+        
+    #     if echo "$response" | jq -e '.status == "healthy"' > /dev/null; then
+    #       echo "✅ Health check passed"
+    #     else
+    #       echo "❌ Health check failed"
+    #       exit 1
+    #     fi
+
     - name: Test health endpoint
       run: |
         response=$(curl -s http://localhost:8080/health)
         echo "Health response: $response"
-        
-        if echo "$response" | jq -e '.status == "healthy"' > /dev/null; then
+
+        backend_status=$(echo "$response" | jq -r '.backend')
+        mysql_status=$(echo "$response" | jq -r '.mysql')
+        redis_status=$(echo "$response" | jq -r '.redis')
+
+        if [ "$backend_status" = "ok" ] && [ "$mysql_status" = "ok" ] && [ "$redis_status" = "ok" ]; then
           echo "✅ Health check passed"
         else
           echo "❌ Health check failed"
           exit 1
         fi
+
+
+
 
     - name: Test realtime API
       run: |
