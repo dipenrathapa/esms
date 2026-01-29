@@ -4,6 +4,8 @@ A cloud-deployable, real-time sensor analytics system demonstrating **Innovation
 
 ---
 
+![ESMS Frontend Dashboard](videos/1000012672.jpg)
+
 ## 🎯 Project Overview
 
 ESMS is a full-stack IoT application that:
