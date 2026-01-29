@@ -38,6 +38,19 @@ Technologies used: **Rust, Actix-web, Tokio, MySQL, Redis, Docker, Docker Compos
 
 ![ESMS Frontend Dashboard](images/1000012555.jpg)
 
+## 🎨 Frontend & Visualization
+
+The frontend of ESMS was fully implemented by **Pritam Parmanik**, focusing on responsive, interactive, and real-time dashboards. Key contributions include:
+
+- **UI/UX Design:** Responsive HTML5/CSS3 layouts, Flexbox/Grid, theming, dark mode, typography, cross-browser compatibility, and mobile-friendly design.  
+- **Data Visualization:** Real-time D3.js charts, including line, scatter, and time series charts with axis scaling, legends, gridlines, color scales, motion/heat shading, and conditional formatting.  
+- **Interactivity:** Dynamic DOM updates, event handling, hover effects, button filters, tooltips, state management, and real-time user feedback.  
+- **API Integration:** JSON data fetching, asynchronous updates, error handling, auto-refresh polling, and status indicators.  
+- **Performance & Maintenance:** Modular UI components, structured layout panels, performance optimization, debugging/logging, and CI/CD readiness.  
+- **Advanced Analytics:** Interactive correlation analysis and environmental stress visualization tailored for sensor dashboards.  
+
+Technologies used: **HTML5, CSS3, JavaScript, D3.js, Fetch API, Responsive Design, UI/UX Principles, CI/CD Ready**.
+
 ## 🏗️ System Architecture
 
 ```
@@ -64,6 +77,19 @@ Technologies used: **Rust, Actix-web, Tokio, MySQL, Redis, Docker, Docker Compos
 ```
 
 ---
+
+## 🔌 Hardware Integration & Arduino Programming
+
+The hardware and firmware of ESMS were fully implemented by **Shokhjahon Kodirov**, focusing on real-time sensor data acquisition and robust microcontroller integration. Key contributions include:
+
+- **Microcontroller Programming:** Arduino Uno firmware in C/C++, modular function decomposition, loop-based non-blocking processing, and event-driven design.  
+- **Sensor Integration:** DHT11 temperature & humidity, PIR motion, analog sound, and heart rate pulse sensors, including calibration, threshold-based event detection, and peak detection.  
+- **Signal Processing:** Heart rate BPM calculation, pulse waveform analysis, noise mapping, data smoothing, sampling/reporting interval management, and fallback checks.  
+- **Data Management:** Serial communication, JSON formatting, real-time data streaming, output standardization for backend integration, and elapsed time calculation without RTC.  
+- **Hardware Setup:** Breadboard wiring, pin configuration, multi-sensor interfacing, low-power robustness, safety, and error handling for reliable sensor readings.  
+- **IoT Readiness:** Real-time monitoring, fault-tolerant sensor data, and robust low-level hardware interfacing for full-stack integration.  
+
+Technologies used: **Arduino Uno, C/C++, DHT11, PIR Sensor, Pulse Sensor, Analog Sound Sensor, Serial Communication, JSON, Breadboard Prototyping, Modular Firmware Design**.
 
 ## 🎥 Project Demonstration Video
 
