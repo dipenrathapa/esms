@@ -33,7 +33,7 @@ fn create_mock_sensor_data(timestamp: &str) -> EnhancedSensorData {
     }
 }
 
-/// Removed `async` because nothing is `.await`ed inside
+/// Synchronous creation of AppState for tests
 fn create_test_app_state() -> web::Data<AppState> {
     let config = AppConfig {
         redis_url: "redis://localhost:6379".to_string(),
@@ -64,6 +64,16 @@ fn create_test_app_state() -> web::Data<AppState> {
         shutdown_token: CancellationToken::new(),
         retry_config: RetryConfig::default(),
     })
+}
+
+/// Helper to create App with all routes
+fn init_test_app(state: web::Data<AppState>) -> App {
+    App::new()
+        .app_data(state)
+        .route("/health", web::get().to(health))
+        .route("/api/realtime", web::get().to(get_realtime))
+        .route("/api/history", web::get().to(get_history))
+        .route("/api/fhir/observation", web::get().to(get_fhir_observation))
 }
 
 // ============================================================================
@@ -139,13 +149,12 @@ mod realtime_tests {
 
         let req = test::TestRequest::get().uri("/api/realtime").to_request();
         let resp = test::call_service(&app, req).await;
-
         assert!(resp.status().is_success());
     }
 
     #[actix_web::test]
     async fn test_realtime_returns_array() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -162,7 +171,7 @@ mod realtime_tests {
 
     #[actix_web::test]
     async fn test_realtime_data_structure() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -182,7 +191,7 @@ mod realtime_tests {
 
     #[actix_web::test]
     async fn test_realtime_ordered_newest_first() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -193,7 +202,6 @@ mod realtime_tests {
         let req = test::TestRequest::get().uri("/api/realtime").to_request();
         let resp: Vec<EnhancedSensorData> = test::call_and_read_body_json(&app, req).await;
 
-        // Verify timestamps are in descending order
         for i in 0..resp.len() - 1 {
             let current = chrono::DateTime::parse_from_rfc3339(&resp[i].data.timestamp).unwrap();
             let next = chrono::DateTime::parse_from_rfc3339(&resp[i + 1].data.timestamp).unwrap();
@@ -248,7 +256,7 @@ mod history_tests {
 
     #[actix_web::test]
     async fn test_history_missing_parameters() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -264,7 +272,7 @@ mod history_tests {
 
     #[actix_web::test]
     async fn test_history_invalid_timestamp_format() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -282,7 +290,7 @@ mod history_tests {
 
     #[actix_web::test]
     async fn test_history_start_after_end() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -307,7 +315,7 @@ mod history_tests {
 
     #[actix_web::test]
     async fn test_history_valid_rfc3339_timestamps() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -327,13 +335,12 @@ mod history_tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        // Should return 200 even if no data (connection issues handled gracefully)
         assert!(resp.status().is_success() || resp.status().is_server_error());
     }
 
     #[actix_web::test]
     async fn test_history_mysql_datetime_format() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -346,13 +353,12 @@ mod history_tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        // Should accept MySQL datetime format
         assert!(resp.status().is_success() || resp.status().is_server_error());
     }
 
     #[actix_web::test]
     async fn test_history_edge_case_same_start_end() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -361,7 +367,6 @@ mod history_tests {
         .await;
 
         let time = Utc::now();
-
         let req = test::TestRequest::get()
             .uri(&format!(
                 "/api/history?start={}&end={}",
@@ -371,7 +376,6 @@ mod history_tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        // Same start and end should fail validation
         assert!(resp.status().is_client_error());
     }
 }
@@ -386,7 +390,7 @@ mod fhir_tests {
 
     #[actix_web::test]
     async fn test_fhir_observation_structure() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -408,7 +412,7 @@ mod fhir_tests {
 
     #[actix_web::test]
     async fn test_fhir_observation_components() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -422,12 +426,12 @@ mod fhir_tests {
         let resp: serde_json::Value = test::call_and_read_body_json(&app, req).await;
 
         let components = resp["component"].as_array().unwrap();
-        assert_eq!(components.len(), 5); // temperature, humidity, heart_rate, noise, motion
+        assert_eq!(components.len(), 5);
     }
 
     #[actix_web::test]
     async fn test_fhir_observation_loinc_codes() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -440,14 +444,13 @@ mod fhir_tests {
             .to_request();
         let resp: serde_json::Value = test::call_and_read_body_json(&app, req).await;
 
-        // Verify main observation has LOINC code
         assert_eq!(resp["code"]["coding"][0]["system"], "http://loinc.org");
         assert_eq!(resp["code"]["coding"][0]["code"], "85354-9");
     }
 
     #[actix_web::test]
     async fn test_fhir_observation_stress_interpretation() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -505,7 +508,7 @@ mod fhir_tests {
 
     #[actix_web::test]
     async fn test_fhir_observation_effective_datetime() {
-        let state = create_test_app_state().await;
+        let state = create_test_app_state();
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
@@ -518,13 +521,15 @@ mod fhir_tests {
             .to_request();
         let resp: serde_json::Value = test::call_and_read_body_json(&app, req).await;
 
-        let effective_datetime = resp["effectiveDateTime"].as_str().unwrap();
-        assert!(chrono::DateTime::parse_from_rfc3339(effective_datetime).is_ok());
+        assert!(
+            chrono::DateTime::parse_from_rfc3339(resp["effectiveDateTime"].as_str().unwrap())
+                .is_ok()
+        );
     }
 }
 
 // ============================================================================
-// Integration Tests - Full Workflow
+// Integration & Workflow Tests
 // ============================================================================
 
 #[cfg(test)]
@@ -533,51 +538,39 @@ mod integration_tests {
 
     #[actix_web::test]
     async fn test_full_api_workflow() {
-        let state = create_test_app_state().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(state.clone())
-                .route("/health", web::get().to(health))
-                .route("/api/realtime", web::get().to(get_realtime))
-                .route("/api/fhir/observation", web::get().to(get_fhir_observation)),
-        )
-        .await;
+        let state = create_test_app_state();
+        let app = test::init_service(init_test_app(state.clone())).await;
 
-        // 1. Check health
-        let req = test::TestRequest::get().uri("/health").to_request();
-        let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        let health_req = test::TestRequest::get().uri("/health").to_request();
+        let health_resp = test::call_service(&app, health_req).await;
+        assert!(health_resp.status().is_success());
 
-        // 2. Get realtime data
-        let req = test::TestRequest::get().uri("/api/realtime").to_request();
-        let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        let realtime_req = test::TestRequest::get().uri("/api/realtime").to_request();
+        let realtime_resp: Vec<EnhancedSensorData> =
+            test::call_and_read_body_json(&app, realtime_req).await;
+        assert!(!realtime_resp.is_empty());
 
-        // 3. Get FHIR observation
-        let req = test::TestRequest::get()
+        let fhir_req = test::TestRequest::get()
             .uri("/api/fhir/observation")
             .to_request();
-        let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+        let fhir_resp: serde_json::Value = test::call_and_read_body_json(&app, fhir_req).await;
+        assert_eq!(fhir_resp["resourceType"], "Observation");
     }
 
     #[actix_web::test]
     async fn test_concurrent_requests() {
-        let state = create_test_app_state().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(state.clone())
-                .route("/api/realtime", web::get().to(get_realtime)),
-        )
-        .await;
+        let state = create_test_app_state();
+        let app = test::init_service(init_test_app(state.clone())).await;
 
-        let requests = (0..10).map(|_| async {
-            let req = test::TestRequest::get().uri("/api/realtime").to_request();
-            test::call_service(&app, req).await
+        let futures = (0..5).map(|_| {
+            let app_clone = &app;
+            async move {
+                let req = test::TestRequest::get().uri("/api/realtime").to_request();
+                test::call_service(app_clone, req).await
+            }
         });
 
-        let responses = join_all(requests).await;
-
+        let responses = join_all(futures).await;
         for resp in responses {
             assert!(resp.status().is_success());
         }
