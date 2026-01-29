@@ -1,3 +1,5 @@
+#![allow(clippy::multiple_crate_versions)]
+
 // Re-export modules for testing
 pub mod api;
 pub mod background;
