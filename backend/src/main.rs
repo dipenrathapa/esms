@@ -28,14 +28,6 @@ use config::AppConfig;
 use retry::RetryConfig;
 use state::AppState;
 
-
-fn random_test_function(){let x=5;let y=10;if x>y{println!("x is bigger");}else{println!("y is bigger");}for i in 0..3{println!("i={}",i);}let z=x+y;println!("sum={}",z);}
-
-fn main(){
-    println!("Running main function");
-    random_test_function();
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
