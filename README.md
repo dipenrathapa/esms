@@ -4,24 +4,15 @@ A cloud-deployable, real-time sensor analytics system demonstrating **Innovation
 
 ---
 
-## 👥Project Contribution
-
-| Name | Contribution |
-|------|-------------|
-| **Pritam Parmanik** | <details><summary>Frontend & Visualization (click to expand)</summary><br>Responsive UI design, HTML5 structure, CSS3 styling, Flexbox and Grid layout, Linear gradients, Shadow & border styling, Theming, Dark mode support, Typography management, Cross-browser compatibility, Interactive dashboards, Real-time data rendering, D3.js charting, Time series visualization, Line and scatter charts, Axis scaling, Gridlines and legends, Color scales, Conditional formatting, Motion/heat shading, Tooltip creation, Dynamic DOM manipulation, Event handling, Button filters, State management, User interaction, Hover effects, Transitions & animations, Accessibility considerations, JSON data consumption, API fetching with Fetch API, Error handling, Status indicators, Asynchronous updates, Auto-refresh polling, Chart scaling, Responsive SVGs, Data binding, Structured layout panels, Modular UI components, Real-time user feedback, Performance optimization, Debugging & logging, CI/CD readiness, Interactive correlation analysis, Environmental stress visualization, UI/UX design for sensor dashboards, Mobile-friendly design</details> |
-| **Dipendra Thapa** | <details><summary>Backend & Integration (click to expand)</summary><br>JSON parsing, Redis and MySQL integration, Docker container setup, Fault tolerance, Retry mechanisms, Exponential backoff, In-memory buffering, Asynchronous persistence, Graceful shutdown, Error logging, Centralized error handling, Automatic recovery, System survivability, FHIR Observation endpoint, Parameterized queries, SQL injection prevention, Input validation, Configuration management, Environment variables, Secrets management, Config validation, CI/CD integration, Logging, Structured logging, Sensor simulation, Git hooks, Development environment setup, Automated deployment, Backend API, Real-time data handling, Background task management, Tokio cancellation tokens</details> |
-| **Shokhjahon Kodirov** | <details><summary>Hardware Integration & Arduino Programming (click to expand)</summary><br>Microcontroller programming (Arduino Uno), C/C++ firmware development, Real-time data acquisition, DHT11 temperature & humidity sensor integration, PIR motion sensor interfacing, Analog sound sensor reading, Heart rate pulse sensor signal processing, BPM calculation, Threshold-based event detection, Peak detection, ADC utilization, Sensor calibration, Noise mapping, Data validation and fallback checks, Data smoothing, Sampling and reporting interval management, Timekeeping without RTC, Elapsed time calculation, Serial communication and JSON formatting, Pulse waveform analysis, Safety and error handling, Breadboard wiring and prototyping, Pin configuration, Loop-based non-blocking processing, Event-driven design, Modular function decomposition, Real-time monitoring readiness, Output standardization for backend integration, Low-level hardware interfacing, System startup initialization, Fault tolerance in sensor readings, Multi-sensor interfacing, Robustness in low-power environments, Data streaming for IoT applications</details> |
-
----
-
-
 ## Project Contribution
 
 | Name | Contribution |
 |------|-------------|
-| **Dipendra Thapa** | Backend & Integration: JSON parsing, Redis and MySQL integration, Docker container setup, Fault tolerance, Retry mechanisms, Exponential backoff, In-memory buffering, Asynchronous persistence, Graceful shutdown, Error logging, Centralized error handling, Automatic recovery, System survivability, FHIR Observation endpoint, Parameterized queries, SQL injection prevention, Input validation, Configuration management, Environment variables, Secrets management, Config validation, CI/CD integration, Logging, Structured logging, Sensor simulation, Git hooks, Development environment setup, Automated deployment, Backend API, Real-time data handling, Background task management, Tokio cancellation tokens |
-| **Pritam Parmanik** | Frontend & Visualization: Responsive UI design, HTML5 structure, CSS3 styling, Flexbox and Grid layout, Linear gradients, Shadow & border styling, Theming, Dark mode support, Typography management, Cross-browser compatibility, Interactive dashboards, Real-time data rendering, D3.js charting, Time series visualization, Line and scatter charts, Axis scaling, Gridlines and legends, Color scales, Conditional formatting, Motion/heat shading, Tooltip creation, Dynamic DOM manipulation, Event handling, Button filters, State management, User interaction, Hover effects, Transitions & animations, Accessibility considerations, JSON data consumption, API fetching with Fetch API, Error handling, Status indicators, Asynchronous updates, Auto-refresh polling, Chart scaling, Responsive SVGs, Data binding, Structured layout panels, Modular UI components, Real-time user feedback, Performance optimization, Debugging & logging, CI/CD readiness, Interactive correlation analysis, Environmental stress visualization, UI/UX design for sensor dashboards, Mobile-friendly design |
-| **Shokhjahon Kodirov** | Hardware Integration & Arduino Programming: Microcontroller programming (Arduino Uno), C/C++ firmware development, Real-time data acquisition, DHT11 temperature & humidity sensor integration, PIR motion sensor interfacing, Analog sound sensor reading, Heart rate pulse sensor signal processing, BPM calculation, Threshold-based event detection, Peak detection, ADC utilization, Sensor calibration, Noise mapping, Data validation and fallback checks, Data smoothing, Sampling and reporting interval management, Timekeeping without RTC, Elapsed time calculation, Serial communication and JSON formatting, Pulse waveform analysis, Safety and error handling, Breadboard wiring and prototyping, Pin configuration, Loop-based non-blocking processing, Event-driven design, Modular function decomposition, Real-time monitoring readiness, Output standardization for backend integration, Low-level hardware interfacing, System startup initialization, Fault tolerance in sensor readings, Multi-sensor interfacing, Robustness in low-power environments, Data streaming for IoT applications |
+| **Dipendra Thapa** | <details><summary>Backend & Integration (click to expand)</summary><br>JSON parsing, Redis and MySQL integration, Docker container setup, Fault tolerance, Retry mechanisms, Exponential backoff, In-memory buffering, Asynchronous persistence, Graceful shutdown, Error logging, Centralized error handling, Automatic recovery, System survivability, FHIR Observation endpoint, Parameterized queries, SQL injection prevention, Input validation, Configuration management, Environment variables, Secrets management, Config validation, CI/CD integration, Logging, Structured logging, Sensor simulation, Git hooks, Development environment setup, Automated deployment, Backend API, Real-time data handling, Background task management, Tokio cancellation tokens</details> |
+| **Pritam Parmanik** | <details><summary>Frontend & Visualization (click to expand)</summary><br>Responsive UI design, HTML5 structure, CSS3 styling, Flexbox and Grid layout, Linear gradients, Shadow & border styling, Theming, Dark mode support, Typography management, Cross-browser compatibility, Interactive dashboards, Real-time data rendering, D3.js charting, Time series visualization, Line and scatter charts, Axis scaling, Gridlines and legends, Color scales, Conditional formatting, Motion/heat shading, Tooltip creation, Dynamic DOM manipulation, Event handling, Button filters, State management, User interaction, Hover effects, Transitions & animations, Accessibility considerations, JSON data consumption, API fetching with Fetch API, Error handling, Status indicators, Asynchronous updates, Auto-refresh polling, Chart scaling, Responsive SVGs, Data binding, Structured layout panels, Modular UI components, Real-time user feedback, Performance optimization, Debugging & logging, CI/CD readiness, Interactive correlation analysis, Environmental stress visualization, UI/UX design for sensor dashboards, Mobile-friendly design</details> |
+| **Shokhjahon Kodirov** | <details><summary>Hardware Integration & Arduino Programming (click to expand)</summary><br>Microcontroller programming (Arduino Uno), C/C++ firmware development, Real-time data acquisition, DHT11 temperature & humidity sensor integration, PIR motion sensor interfacing, Analog sound sensor reading, Heart rate pulse sensor signal processing, BPM calculation, Threshold-based event detection, Peak detection, ADC utilization, Sensor calibration, Noise mapping, Data validation and fallback checks, Data smoothing, Sampling and reporting interval management, Timekeeping without RTC, Elapsed time calculation, Serial communication and JSON formatting, Pulse waveform analysis, Safety and error handling, Breadboard wiring and prototyping, Pin configuration, Loop-based non-blocking processing, Event-driven design, Modular function decomposition, Real-time monitoring readiness, Output standardization for backend integration, Low-level hardware interfacing, System startup initialization, Fault tolerance in sensor readings, Multi-sensor interfacing, Robustness in low-power environments, Data streaming for IoT applications</details> |
+
+
 
 
 
@@ -525,58 +516,21 @@ If Arduino is connected but simulation runs:
 - Check Arduino is sending valid JSON
 - View backend logs: `docker-compose logs backend`
 
-
+---
 
 ## 📝 License
 
 This project is created for educational purposes as part of the Innovation and Complexity Management (INCO) course.
 
-
+---
 
 ## 👥 Contributors
 
-<details>
-<summary><strong>Pritam Pramanik — Frontend & Data Visualization</strong></summary>
-
-<br>
-
-- Designed and implemented a responsive, mobile-friendly frontend dashboard using HTML5, CSS3, Flexbox/Grid, with theming and dark mode support.
-- Developed real-time, interactive D3.js visualizations for multi-sensor data (temperature, humidity, noise, motion, heart rate).
-- Implemented time-series line and scatter charts with proper axis scaling, legends, gridlines, tooltips, and conditional formatting to clearly show trends and correlations.
-- Integrated frontend with backend services via REST APIs (Fetch API), handling JSON data, asynchronous updates, auto-refresh polling, status indicators, and error states.
-- Optimized UI performance for frequent sensor updates using efficient DOM manipulation and buffered data handling.
-- Focused on clear, user-centered UI/UX design to support accurate interpretation of physiological data in environmental context.
-
-</details>
-
-<details>
-<summary><strong>Dipendra Thapa — Backend & Integration</strong></summary>
-
-<br>
-
-- Implemented backend services for real-time data handling, including JSON parsing, Redis and MySQL integration, and Docker-based deployment.
-- Designed fault-tolerant mechanisms such as retries, exponential backoff, in-memory buffering, asynchronous persistence, and graceful shutdown.
-- Developed secure and robust APIs including FHIR Observation endpoints, parameterized queries, input validation, and SQL injection prevention.
-- Managed configuration, environment variables, secrets, CI/CD integration, structured logging, automated deployment, and system recovery mechanisms.
-- Implemented sensor simulation, background task management, and survivability features to ensure reliable system operation.
-
-</details>
-
-<details>
-<summary><strong>Shokhjahon Kodirov — Hardware Integration & Arduino Programming</strong></summary>
-
-<br>
-
-- Developed Arduino-based firmware (C/C++) for real-time multi-sensor data acquisition using Arduino Uno.
-- Integrated DHT11 temperature/humidity sensor, PIR motion sensor, analog sound sensor, and heart rate pulse sensor.
-- Implemented signal processing for heart rate measurement, including peak detection, BPM calculation, and threshold-based event detection.
-- Applied sensor calibration, data smoothing, validation, and fault tolerance to improve measurement reliability.
-- Managed serial communication, JSON formatting, timing without RTC, and standardized sensor output for backend integration.
-
-</details>
+- Pritam Parmanik - Frontend & Visualization
+- Dipendra Thapa - Backend & Integration
+- Shokhjahon Kodirov - Hardware Integration & Arduino Programming 
 
 ---
-
 
 ## 🙏 Acknowledgments
 
