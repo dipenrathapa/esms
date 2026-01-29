@@ -1,5 +1,6 @@
 use actix_web::{test, web, App};
 use chrono::Utc;
+use futures::future::join_all;
 use mysql_async::{Opts, Pool};
 use redis::Client as RedisClient;
 use std::collections::VecDeque;
@@ -7,11 +8,11 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
-use crate::api::{get_fhir_observation, get_history, get_realtime, get_redis_history, health};
-use crate::config::AppConfig;
-use crate::models::{EnhancedSensorData, SensorData};
-use crate::retry::RetryConfig;
-use crate::state::AppState;
+use esms_backend::api::{get_fhir_observation, get_history, get_realtime, health};
+use esms_backend::config::AppConfig;
+use esms_backend::models::{EnhancedSensorData, SensorData};
+use esms_backend::retry::RetryConfig;
+use esms_backend::state::AppState;
 
 // ============================================================================
 // Test Helpers & Utilities
@@ -569,18 +570,14 @@ mod integration_tests {
         )
         .await;
 
-        let handles: Vec<_> = (0..10)
-            .map(|_| {
-                let app = app.clone();
-                tokio::spawn(async move {
-                    let req = test::TestRequest::get().uri("/api/realtime").to_request();
-                    test::call_service(&app, req).await
-                })
-            })
-            .collect();
+        let requests = (0..10).map(|_| async {
+            let req = test::TestRequest::get().uri("/api/realtime").to_request();
+            test::call_service(&app, req).await
+        });
 
-        for handle in handles {
-            let resp = handle.await.unwrap();
+        let responses = join_all(requests).await;
+
+        for resp in responses {
             assert!(resp.status().is_success());
         }
     }
