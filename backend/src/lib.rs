@@ -1,3 +1,5 @@
+#![allow(clippy::multiple_crate_versions)]
+#[allow(clippy::pedantic)]
 pub mod background;
 pub mod business;
 pub mod config;
