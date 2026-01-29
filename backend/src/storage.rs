@@ -8,6 +8,15 @@ use crate::error::ApiError;
 use crate::models::EnhancedSensorData;
 use crate::retry::{retry_with_backoff, RetryConfig};
 
+/// Stores the given sensor data payload into Redis with a TTL of 600 seconds.
+/// Retries the operation based on the provided retry configuration.
+/// # Arguments
+/// * `redis` - An Arc-wrapped Mutex containing the Redis client.
+/// * `payload` - The sensor data payload to store.
+/// * `retry_config` - Configuration for retrying the operation.
+/// # Returns
+/// * `Ok(())` if the operation succeeds.
+/// * `Err(ApiError)` if the operation fails after all retry attempts.
 pub async fn store_to_redis(
     redis: Arc<Mutex<redis::Client>>,
     payload: EnhancedSensorData,
@@ -81,6 +90,15 @@ pub async fn store_to_redis(
     Ok(())
 }
 
+/// Stores the given sensor data payload into MySQL database.
+/// Retries the operation based on the provided retry configuration.
+/// # Arguments
+/// * `pool` - The MySQL connection pool.
+/// * `payload` - The sensor data payload to store.                 
+/// * `retry_config` - Configuration for retrying the operation.
+/// # Returns
+/// * `Ok(())` if the operation succeeds.
+/// * `Err(ApiError)` if the operation fails after all retry attempts.
 pub async fn store_to_mysql(
     pool: Pool,
     payload: EnhancedSensorData,

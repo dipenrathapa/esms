@@ -20,6 +20,14 @@ impl Default for RetryConfig {
     }
 }
 
+/// Retries the given asynchronous operation with exponential backoff.
+/// # Arguments
+/// * `operation` - An asynchronous function that returns a Result.
+/// * `config` - Configuration for retries.
+/// * `operation_name` - A string slice representing the name of the operation for logging purposes
+/// # Returns
+/// * `Ok(T)` if the operation succeeds within the allowed attempts.
+/// * `Err(E)` if the operation fails after all retry attempts.
 pub async fn retry_with_backoff<F, Fut, T, E>(
     operation: F,
     config: &RetryConfig,

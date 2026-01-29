@@ -35,6 +35,12 @@ impl AppConfig {
         }
     }
 
+    /// Creates configuration from environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ConfigError` if any required environment variable is missing
+    /// or cannot be parsed correctly.
     pub fn from_env_validated() -> Result<Self, ConfigError> {
         let config = Self::from_env();
         validate_config(&config)?;
