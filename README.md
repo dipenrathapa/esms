@@ -514,13 +514,13 @@ If Arduino is connected but simulation runs:
 - Check Arduino is sending valid JSON
 - View backend logs: `docker-compose logs backend`
 
----
+
 
 ## 📝 License
 
 This project is created for educational purposes as part of the Innovation and Complexity Management (INCO) course.
 
----
+
 
 ## 👥 Contributors
 
