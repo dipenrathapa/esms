@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 # Copy everything at once (Cargo.toml + src)
 COPY Cargo.toml ./ 
 COPY src ./src
-COPY benches ./benches
+
 
 
 # Build release binary
