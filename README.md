@@ -3,10 +3,9 @@
 A cloud-deployable, real-time sensor analytics system demonstrating **Innovation and Complexity Management (INCO)** principles through automated deployment, live data visualization, and end-to-end system integration.
 
 ---
-### demo site: https://dipenrathapa.github.io/esms/
-### git repo: https://github.com/dipenrathapa/esms
 
-https://dashboard.render.com/web/srv-d5u9mh4hg0os73btab0g/deploys/dep-d5uae2npm1nc73dduop0
+### demo site: https://dipenrathapa.github.io/esms/
+# demo page use api to render json data: https://esms.onrender.com/api/realtime
 
 ## Project Contribution
 
