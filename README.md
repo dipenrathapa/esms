@@ -28,7 +28,7 @@ ESMS is a full-stack IoT application that:
 
 # ESMS Backend
 
-The **Environmental Stress Monitoring System (ESMS)** backend was fully implemented by **Dipendra Thapa**, providing fault-tolerant, secure, and real-time data processing features for sensor data collection, processing, and healthcare-standard reporting.
+The **Environmental Stress Monitoring System (ESMS)** backend was fully implemented by **Dipendra Thapa**, providing fault-tolerant, secure, and real-time data processing features for sensor data collection, processing, and reporting.
 
 ## 🖥️ Backend Development
 
