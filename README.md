@@ -5,7 +5,7 @@ A cloud-deployable, real-time sensor analytics system demonstrating **Innovation
 ---
 
 ### demo site: https://dipenrathapa.github.io/esms/
-#### demo page use api to render json data: https://esms.onrender.com/api/realtime
+#### api used by demo: https://esms.onrender.com/api/realtime
 
 ## Project Contribution
 
