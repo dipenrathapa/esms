@@ -283,6 +283,7 @@ pub fn parse_sensor_data(input: &[u8]) -> Option<SensorData> {
     Some(data)
 }
 
+/// Simulates sensor data for testing purposes.
 #[must_use]
 pub fn simulate_sensor_data() -> SensorData {
     let mut rng = rand::thread_rng();
