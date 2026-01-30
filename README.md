@@ -29,20 +29,77 @@ ESMS is a full-stack IoT application that:
 
 ---
 
+# ESMS Backend
+
+The **Environmental Stress Monitoring System (ESMS)** backend was fully implemented by **Dipendra Thapa**, providing fault-tolerant, secure, and real-time data processing features for sensor data collection, processing, and healthcare-standard reporting.
+
 ## 🖥️ Backend Development
 
-The backend of ESMS was fully implemented by **Dipendra Thapa**, covering fault-tolerant, secure, and real-time data processing features. Key contributions include:
+Key features and contributions:
 
-- **Data Processing & Stress Calculation:** Real-time sensor data ingestion, JSON parsing, and stress index computation.  
-- **Fault Tolerance:** Retry mechanisms with exponential backoff, in-memory buffering, asynchronous persistence, graceful shutdown, and Docker auto-restart.  
-- **Error Handling & Logging:** Centralized error.rs module, structured logging with `tracing`, automatic retries, and task-level survivability.  
-- **FHIR Compliance:** FHIR Observation endpoint exposing stress index in healthcare-standard format.  
-- **Security & Validation:** Parameterized MySQL queries to prevent SQL injection, partial input validation for sensor and FHIR data.  
-- **Deployment & CI/CD:** Dockerized backend container, orchestrated with docker-compose, automated deployment via GitHub Actions.  
-- **Configuration Management:** Dynamic environment-based config, secure secrets via GitHub Secrets, validation before startup, and simulated sensor fallback.  
-- **Testing:** Rust #[test] functions for stress calculation, sensor validation, and simulation edge cases.  
+### Data Processing & Stress Calculation
+- Real-time ingestion of sensor data.
+- JSON parsing and computation of stress index and stress levels.
+- Handles edge cases and invalid sensor data gracefully.
 
-Technologies used: **Rust, Actix-web, Tokio, MySQL, Redis, Docker, Docker Compose, GitHub Actions, FHIR, tracing**.
+### Fault Tolerance & Reliability
+- Retry mechanisms with exponential backoff for database writes.
+- In-memory buffering for temporary failures.
+- Asynchronous persistence for smooth operation.
+- Graceful shutdown with Docker auto-restart.
+- Full-stack integration tests to ensure MySQL and Redis persistence and caching work reliably.
+
+### Error Handling & Logging
+- Centralized `error.rs` module for uniform error handling.
+- Structured logging with `tracing`.
+- Automatic retries on transient failures.
+- Task-level survivability: one module failure does not crash the entire backend.
+- Logs automatically captured and validated in CI/CD pipelines.
+
+### FHIR Compliance & Data Validation
+- FHIR Observation endpoint exposes stress index in healthcare-standard format.
+- API responses validated for correct JSON structure.
+- Partial input validation to prevent malformed or malicious sensor/FHIR data.
+
+### Security & Configuration Management
+- Parameterized MySQL queries to prevent SQL injection attacks.
+- Dynamic environment-based configuration via `.env` and `.env.example`.
+- Secrets injected securely through GitHub Actions.
+- Automated configuration validation and simulated sensor fallback for CI/CD.
+
+### Testing & Continuous Integration
+- Unit tests for stress calculation, sensor parsing, and simulation edge cases.
+- Integration tests with MySQL, Redis, and frontend interactions.
+- Test coverage reports generated automatically with `cargo-tarpaulin`.
+- Artifacts stored for CI/CD visibility and regression detection.
+
+### Deployment & CI/CD Automation
+- Dockerized backend container orchestrated with Docker Compose.
+- Optimized multi-stage Docker builds for smaller images.
+- Automated CI/CD pipeline with GitHub Actions:
+  - **Code quality checks:** Clippy strict mode, Rustfmt formatting.
+  - **Security audits:** `cargo-audit` for known vulnerabilities.
+  - **Unit and integration testing** with coverage reports.
+  - **Performance and load testing** using Apache Bench.
+  - **Deployment validation** including env validation and Dockerfile checks.
+
+### Development Environment Automation
+- Rust toolchain and system dependencies installed automatically.
+- Docker images built and cached for fast CI/CD builds.
+- Reproducible environment for new developers and automated workflows.
+
+## 🛠️ Technologies Used
+- **Programming:** Rust, Actix-web, Tokio
+- **Databases:** MySQL, Redis
+- **DevOps & CI/CD:** Docker, Docker Compose, GitHub Actions
+- **Healthcare Standards:** FHIR
+- **Logging & Monitoring:** tracing
+- **Testing & Coverage:** cargo-tarpaulin, Apache Bench
+
+---
+
+> ✅ This backend design ensures reliability, security, fault tolerance, real-time processing, FHIR compliance, and full CI/CD automation for production-ready deployment.
+
 
 ## 🔌 Hardware Setup (Arduino)
 
