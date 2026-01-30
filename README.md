@@ -212,6 +212,52 @@ Your Arduino must send JSON over serial at 9600 baud:
 ```
 
 #### Run the System
+### **Running Locally**
+
+1. **Setup Environment**
+   - Copy `.env.example` to `.env`:
+     ```bash
+     cp .env.example .env
+     ```
+   - Open `.env` and **choose your setup**:
+     - Uncomment the local settings if running locally  
+     - Uncomment the Docker settings if running in Docker  
+     ⚠ Comment the other one to avoid conflicts.
+
+2. **Database Setup**
+   - Make sure MySQL server is running.
+   - Create the database and tables from `init.sql`:
+     ```bash
+     mysql -u your_mysql_user -p < init.sql
+     ```
+
+3. **Start Redis Server**
+   - Make sure Redis server is running:
+     ```bash
+     redis-server
+     ```
+     Or if installed via Homebrew:
+     ```bash
+     brew services start redis
+     ```
+
+4. **Run Backend**
+   - Start the Rust backend:
+     ```bash
+     cargo run
+     ```
+
+5. **Run Frontend**
+   - Navigate to your frontend folder and start a simple HTTP server:
+     ```bash
+     python3 -m http.server 3000
+     ```
+   - Open browser at `http://localhost:3000`
+
+> Now your backend, frontend, MySQL, and Redis are all running locally.
+
+
+### **Running In docker**
 ```bash
 # Clone repository
 git clone <your-repo-url>
@@ -510,8 +556,8 @@ cargo run
 ### **Frontend Development**
 ```bash
 cd frontend
-python3 -m http.server 8000
-# Open http://localhost:8000
+python3 -m http.server 3000
+# Open http://localhost:3000
 ```
 
 ### **View Logs**
@@ -527,6 +573,9 @@ docker-compose up --build
 ```
 
 ---
+
+
+
 
 ## 🧪 Testing
 
