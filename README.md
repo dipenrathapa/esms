@@ -192,25 +192,6 @@ The frontend **immediately reacts** to stress changes through:
 ## 🚀 Quick Start
 
 ### **Option 1: Local Deployment (with Arduino)**
-
-#### Prerequisites
-- Docker & Docker Compose
-- Arduino Uno with sensors connected to `/dev/cu.usbmodem113401`
-- Rust 1.75+ (optional, for development)
-
-#### Arduino Data Format
-Your Arduino must send JSON over serial at 9600 baud:
-```json
-{
-  "temperature": 30.5,
-  "humidity": 65,
-  "noise": 70,
-  "heart_rate": 85,
-  "motion": true,
-  "timestamp": "2026-01-20T10:00:00Z"
-}
-```
-
 #### Run the System
 ### **Running Locally**
 
@@ -257,7 +238,43 @@ Your Arduino must send JSON over serial at 9600 baud:
 > Now your backend, frontend, MySQL, and Redis are all running locally.
 
 
+#### Prerequisites
+- Docker & Docker Compose
+- Arduino Uno with sensors connected to `/dev/cu.usbmodem113401`
+- Rust 1.75+ (optional, for development)
+
+#### Arduino Data Format
+Your Arduino must send JSON over serial at 9600 baud:
+```json
+{
+  "temperature": 30.5,
+  "humidity": 65,
+  "noise": 70,
+  "heart_rate": 85,
+  "motion": true,
+  "timestamp": "2026-01-20T10:00:00Z"
+}
+```
+
 ### **Running In docker**
+#### Prerequisites
+- Docker & Docker Compose
+- Arduino Uno with sensors connected to `/dev/cu.usbmodem113401`
+- Rust 1.75+ (optional, for development)
+
+#### Arduino Data Format
+Your Arduino must send JSON over serial at 9600 baud:
+```json
+{
+  "temperature": 30.5,
+  "humidity": 65,
+  "noise": 70,
+  "heart_rate": 85,
+  "motion": true,
+  "timestamp": "2026-01-20T10:00:00Z"
+}
+```
+
 ```bash
 # Clone repository
 git clone <your-repo-url>
